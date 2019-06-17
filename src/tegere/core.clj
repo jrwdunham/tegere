@@ -1,25 +1,8 @@
 (ns tegere.core
+  "Feature file parser. Functionality for parsing a feature file (string of text)
+  into structured data: a vector-based tree structure. Uses instaparse and a very
+  simply context-free grammar."
   (:require [instaparse.core :as insta]))
-
-(def as-and-bs-grammar
-  (str
-   "S = AB*\n"
-   "AB = A B\n"
-   "A = 'a'+\n"
-   "B = 'b'+\n"))
-
-(def as-and-bs
-  (insta/parser as-and-bs-grammar))
-
-
-;; @generate-ar-op-cons-emails @template.template_key.<template_key>
-
-;; Scenario: Dan wants to generate the Accounts Receivable (AR) Operating Permit (OP) renewal HTML email documents using the DGS and confirm that the generated documents have the expected properties.
-;; Given a DGS instance containing an up-to-date template <template_key>, including its template dependencies
-;; When a document of type <output_type> is generated from template <template_key> using data context <context_path>
-;; Then the generated document is stored in the MDS
-;; And the generated document is rendered correctly
-
 
 (def step-label-grmr
   (str
@@ -29,8 +12,7 @@
    "THEN_LABEL = 'Then'\n"
    "CONJ_LABEL = AND_LABEL | BUT_LABEL\n"
    "AND_LABEL = 'And'\n"
-   "BUT_LABEL = 'But'\n"
-   ))
+   "BUT_LABEL = 'But'\n"))
 
 (def step-label-prsr (insta/parser step-label-grmr))
 
@@ -44,17 +26,14 @@
    indent-grmr
    "STEP_TEXT = #'[^\\n]+'\n"
    step-label-grmr
-   new-line-grmr
-   )
-  )
+   new-line-grmr))
 
 (def step-prsr (insta/parser step-grmr))
 
 (def step-block-grmr
   (str
    "STEP_BLOCK = STEP+\n"
-   step-grmr
-   ))
+   step-grmr))
 
 (def step-block-prsr (insta/parser step-block-grmr))
 
@@ -99,8 +78,7 @@
    "TAG_LINE = INDENT TAG_SET NEW_LINE\n"
    new-line-grmr
    indent-grmr
-   tag-set-grmr
-   ))
+   tag-set-grmr))
 
 (def tag-line-prsr (insta/parser tag-line-grmr))
 
@@ -110,8 +88,7 @@
    indent-grmr
    "EXAMPLES_LABEL = 'Examples: '\n"
    "EXAMPLES_TEXT = #'[^\\n]+'\n"
-   new-line-grmr
-   ))
+   new-line-grmr))
 
 (def examples-line-prsr (insta/parser examples-line-grmr))
 
@@ -121,16 +98,14 @@
    indent-grmr
    "BORDER = '|'\n"
    "CELL = #'[^\\|]+'\n"
-   new-line-grmr
-   ))
+   new-line-grmr))
 
 (def table-row-prsr (insta/parser table-row-grmr))
 
 (def table-grmr
   (str
    "TABLE = TABLE_ROW TABLE_ROW TABLE_ROW*\n"
-   table-row-grmr
-   ))
+   table-row-grmr))
 
 (def table-prsr (insta/parser table-grmr))
 
@@ -138,8 +113,7 @@
   (str
    "EXAMPLES = EXAMPLES_LINE TABLE\n"
    examples-line-grmr
-   table-grmr
-   ))
+   table-grmr))
 
 (def examples-prsr (insta/parser examples-grmr))
 
@@ -148,13 +122,27 @@
    "SCENARIO = TAG_LINE? SCENARIO_LINE STEP_BLOCK\n"
    tag-line-grmr
    scenario-line-grmr
-   step-block-grmr
-   )
-  )
+   step-block-grmr))
 
 (def scenario-prsr (insta/parser scenario-grmr))
 
 (def empty-line-grmr "EMPTY_LINE = #'\\s*\\n'\n")
+
+(def comment-line-grmr
+  (str
+   "COMMENT_LINE\n = INDENT* COMMENT_SENTINEL+ COMMENT_TEXT* NEW_LINE\n"
+   "COMMENT_SENTINEL = '#'\n"
+   indent-grmr
+   "COMMENT_TEXT = #'[^\\n]+'\n"
+   new-line-grmr))
+
+(def comment-line-prsr (insta/parser comment-line-grmr))
+
+(def ignored-line-grmr
+  (str
+   "IGNORED_LINE = EMPTY_LINE | COMMENT_LINE\n"
+   empty-line-grmr
+   comment-line-grmr))
 
 (def scenario-outline-grmr
   (str
@@ -183,8 +171,7 @@
    "FEATURE_DESCRIPTION_LINE = INDENT FEATURE_DESCRIPTION_FRAGMENT NEW_LINE\n"
    "FEATURE_DESCRIPTION_FRAGMENT = #'[^\\n]+'\n"
    indent-grmr
-   new-line-grmr
-   ))
+   new-line-grmr))
 
 (def feature-description-block-prsr (insta/parser feature-description-block-grmr))
 
@@ -193,29 +180,20 @@
    "FEATURE_BLOCK = TAG_LINE? FEATURE_LINE FEATURE_DESCRIPTION_BLOCK?\n"
    tag-line-grmr
    feature-line-grmr
-   feature-description-block-grmr
-   ))
+   feature-description-block-grmr))
 
 (def feature-block-prsr (insta/parser feature-block-grmr))
 
 (def feature-grmr
   (str
-   "FEATURE = FEATURE_BLOCK EMPTY_LINE* (SCENARIO | SCENARIO_OUTLINE) (EMPTY_LINE* (SCENARIO | SCENARIO_OUTLINE))?\n"
+   "FEATURE = IGNORED_LINE* FEATURE_BLOCK"
+   " IGNORED_LINE* (SCENARIO | SCENARIO_OUTLINE)"
+   " (IGNORED_LINE* (SCENARIO | SCENARIO_OUTLINE))?"
+   " IGNORED_LINE*\n"
+   ignored-line-grmr
    empty-line-grmr
    feature-block-grmr
    scenario-grmr
-   scenario-outline-grmr
-   ))
+   scenario-outline-grmr))
 
 (def feature-prsr (insta/parser feature-grmr))
-
-(def comment-grmr
-  (str
-   "COMMENT_LINE = INDENT* COMMENT_SENTINEL+ COMMENT_TEXT* NEW_LINE\n"
-   "COMMENT_SENTINEL = '#'\n"
-   indent-grmr
-   "COMMENT_TEXT = #'[^\\n]+'\n"
-   new-line-grmr
-   ))
-
-(def comment-prsr (insta/parser comment-grmr))

@@ -1,22 +1,8 @@
 (ns tegere.core-fiddle
+  "Fiddle file for playing around with core.clj."
   (:require [tegere.core :refer :all]))
 
-
 (comment
-
-  (* 8 8 )
-
-  as-and-bs-grammar
-
-  as-and-bs
-
-  (type as-and-bs)
-
-  (as-and-bs "aaaaabbbaaaabb")
-
-  (as-and-bs "")
-
-  (as-and-bs "babbabab")
 
   (step-label-prsr "Given")
 
@@ -178,5 +164,69 @@
     "    But he doesn't eat it\n"
     "    And he looks at me quizically\n"
     ))
+
+  (feature-prsr
+   (str
+    "# This is a comment about this feature\n"
+    "\n"
+    "@monkeys\n"
+    "Feature: Monkeys behave as expected\n"
+    "  And my feature is so cool\n"
+    "  because blah blah blah\n"
+    "\n"
+    "\n"
+    "  # This is a comment about this scenario ...\n"
+    "  @monkeys @caution-tests\n"
+    "  Scenario Outline: Monkeys are cautious when offered food.\n"
+    "    Given a monkey\n"
+    "    When I give him a banana\n"
+    "    Then he is happy\n"
+    "    But he doesn't eat it\n"
+    "    And he looks at me quizically\n"
+    "   \n"
+    "   \n"
+    "  Examples: monkey characteristics:\n"
+    "  | h1  | h2  | h3  |\n"
+    "  | d10 | d20 | d30 |\n"
+    "  | d11 | d21 | d31 |\n"
+    "   \n"
+    "  # This is a comment about this scenario outline...\n"
+    "\n"
+    "  @monkeys @caution-tests\n"
+    "  Scenario: Monkeys are cautious when offered food.\n"
+    "    Given a monkey\n"
+    "    When I give him a banana\n"
+    "    Then he is happy\n"
+    "    But he doesn't eat it\n"
+    "    And he looks at me quizically\n"
+    "\n"
+    "\n"
+    ))
+
+  (let [real-feature
+        (slurp (.getPath (clojure.java.io/resource "sample.feature")))]
+    (feature-prsr real-feature))
+
+  (let [real-feature
+        (slurp (.getPath (clojure.java.io/resource "sample.feature")))
+        parse (feature-prsr real-feature)
+        [root-label & nodes] parse]
+    (-> parse
+        count
+        )
+    (map #(if (keyword? %) % (first %)) parse)
+
+    (map type parse)
+
+    nodes
+    (->> nodes
+         (map first)
+         (filter (fn [x] (not= x :IGNORED_LINE)))
+         )
+    )
+
+  (set [1 2 1 2])
+
+  (not= 1 2)
 
 )
