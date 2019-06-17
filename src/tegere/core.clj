@@ -208,3 +208,14 @@
    ))
 
 (def feature-prsr (insta/parser feature-grmr))
+
+(def comment-grmr
+  (str
+   "COMMENT_LINE = INDENT* COMMENT_SENTINEL+ COMMENT_TEXT* NEW_LINE\n"
+   "COMMENT_SENTINEL = '#'\n"
+   indent-grmr
+   "COMMENT_TEXT = #'[^\\n]+'\n"
+   new-line-grmr
+   ))
+
+(def comment-prsr (insta/parser comment-grmr))
