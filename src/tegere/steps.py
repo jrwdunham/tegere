@@ -1,18 +1,14 @@
 (ns tegere.runner
-  "Defines run, which runs a seq of features that match a supplied tags map,
-  using the step functions defined in a supplied step-registry"
-  (:require [clojure.set :refer [intersection]]))
+  (:require [clojure.set :refer [intersection]]
+            [tegere.parser :refer [parse]]))
 
 (defn get-scenarios-matching-pred
-  "Return subset of scenarios matching pred according to their :all-tags key"
   [scenarios pred]
   (filter
    (fn [{:keys [all-tags]}] (pred all-tags))
    scenarios))
 
 (defn get-scenarios-matching-all
-  "Return subset of scenarios that have all of the and-tags in the value of
-  their :all-tags keys"
   [scenarios and-tags]
   (get-scenarios-matching-pred
    scenarios
@@ -20,8 +16,6 @@
      (= and-tags (intersection all-tags and-tags)))))
 
 (defn get-scenarios-matching-any
-  "Return subset of scenarios that have any of the or-tags in the value of
-  their :all-tags keys"
   [scenarios or-tags]
   (get-scenarios-matching-pred
    scenarios
@@ -29,8 +23,8 @@
      (seq (intersection all-tags or-tags)))))
 
 (defn project-tags
-  "Project the tags of feature to its scenario children under a :all-tags set
-  key. This makes tag-based matching easier."
+  "Project the tags of feature parents to their scenario children. This makes
+  tag-based matching easier."
   [feature]
   (let [feature-tags (get feature :tags ())
         scenarios (:scenarios feature)]
@@ -43,9 +37,6 @@
                 scenarios))))
 
 (defn remove-non-matching-scenarios
-  "Return feature after removing all of its scenarios that do not match tags.
-  If there are and-tags, those take precedence. If there are neither and-tags
-  nor or-tags, then remove no scenarios."
   [{:keys [and-tags or-tags]} {:keys [scenarios] :as feature}]
   (let [matching-scenarios
         (cond
@@ -55,16 +46,42 @@
     (assoc feature :scenarios matching-scenarios)))
 
 (defn get-features-to-run
-  "Return the features seq where each feature has had all of its scenarios
-  removed that do not match tags."
   [features tags]
   (->> features
        (map project-tags)
-       (map (partial remove-non-matching-scenarios tags))))
+       (map (partial remove-non-matching-scenarios tags))
+  )
+
+
+  )
+
+(def registry (atom {}))
+
+(defn register
+  [step-type step-text step-fn]
+  (swap! registry assoc-in [step-type step-text] step-fn))
+
+(defn Given
+  [step-text perform]
+  (register :given step-text perform))
+
+(defn When
+  [step-text perform]
+  (register :when step-text perform))
+
+(defn Then
+  [step-text perform]
+  (register :then step-text perform))
+
+(defn load-steps
+  "Load step registries dynamically from files under dir-path and return a
+  single registry map"
+  [dir-path]
+  {:given {"a monkey" (fn [a] 2)}})
 
 (defn get-step-fns
-  "Get the step functions in step-registry that match step.
-  TODO: :text will be a regular expression in some cases; account for this!"
+  "Get the step functions in step-registry that match step. TODO: :text will be
+  a regular expression in some cases; account for this!"
   [step-registry step]
   (get-in step-registry ((juxt :type :text) step)))
 
@@ -94,45 +111,11 @@
   [features step-registry]
   (map (partial add-step-fns-to-feature step-registry) features))
 
-(defn get-missing-step-fns
-  [features]
-  (->> features
-       (map (fn [feature]
-              (->> feature
-                   :scenarios
-                   (map (fn [scenario]
-                          (->> scenario
-                               :steps
-                               (filter (fn [step] (nil? (:fn step))))))))))
-       flatten
-       set))
-
-(defn is-executable?
-  [features]
-  (let [missing-step-fns (get-missing-step-fns features)]
-    (if (seq missing-step-fns)
-      [false missing-step-fns]
-      [true nil])))
-
-(defn bind
-  "See https://adambard.com/blog/acceptable-error-handling-in-clojure/."
-  [f [val err]]
-  (if (nil? err)
-    (f val)
-    [nil err]))
-
-(defmacro err->>
-  [val & fns]
-  `(->> [~val nil]
-        ~@(map (fn [f]
-                 `(bind ~f))
-               fns)))
-
 (defn run
-  "Run seq of features matching tags using the step functions defined in
-  step-registry"
-  [features tags step-registry]
+  "Run seq of features matching tags using any steps discoverable under
+  steps-path"
+  [features tags steps-path]
   (let [features-to-run (get-features-to-run features tags)
-        features-with-step-fns (add-step-fns features-to-run step-registry)
-        is-executable (is-executable? features-with-step-fns)]
-    [is-executable features-with-step-fns]))
+        step-registry (load-steps steps-path)
+        features-with-step-fns (add-step-fns features-to-run step-registry)]
+    features-with-step-fns))

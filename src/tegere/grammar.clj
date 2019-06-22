@@ -33,7 +33,7 @@
 (def step-prsr (insta/parser step-grmr))
 
 ;; "so" means "Scenario Outline". Steps in a scenario outline must be able to
-;; recognize variale references between angle brackets, e.g.,
+;; recognize variable references between angle brackets, e.g.,
 ;; "Given a <modifier> monkey".
 (def so-step-grmr
   (str
