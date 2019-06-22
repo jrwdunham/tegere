@@ -1,7 +1,8 @@
 (ns tegere.runner
   "Defines run, which runs a seq of features that match a supplied tags map,
   using the step functions defined in a supplied step-registry"
-  (:require [clojure.set :refer [intersection]]))
+  (:require [clojure.string :as s]
+            [clojure.set :refer [intersection]]))
 
 (defn get-scenarios-matching-pred
   "Return subset of scenarios matching pred according to their :all-tags key"
@@ -29,7 +30,7 @@
      (seq (intersection all-tags or-tags)))))
 
 (defn project-tags
-  "Project the tags of feature to its scenario children under a :all-tags set
+  "Project the tags of feature to its scenario children under an :all-tags set
   key. This makes tag-based matching easier."
   [feature]
   (let [feature-tags (get feature :tags ())
@@ -54,13 +55,22 @@
           :else scenarios)]
     (assoc feature :scenarios matching-scenarios)))
 
+(defn features-are-empty
+  "Return true if there are no scenarios in features"
+  [features]
+  (->> features (map :scenarios) flatten seq nil?))
+
 (defn get-features-to-run
   "Return the features seq where each feature has had all of its scenarios
   removed that do not match tags."
-  [features tags]
+  [tags features]
   (->> features
        (map project-tags)
-       (map (partial remove-non-matching-scenarios tags))))
+       (map (partial remove-non-matching-scenarios tags))
+       ((fn [features]
+          (if (features-are-empty features)
+            [nil "No features match the supplied tags"]
+            [features nil])))))
 
 (defn get-step-fns
   "Get the step functions in step-registry that match step.
@@ -88,13 +98,9 @@
          (map (partial add-step-fns-to-scenario step-registry)
               (:scenarios feature))))
 
-(defn add-step-fns
-  "Assign a step function, from step-registry, to each step map (under its :fn
-  key) of each scenario of each feature in features."
-  [features step-registry]
-  (map (partial add-step-fns-to-feature step-registry) features))
-
 (defn get-missing-step-fns
+  "Return the set of step maps in the features coll such that each step is
+  missing a step function under :fn."
   [features]
   (->> features
        (map (fn [feature]
@@ -107,32 +113,117 @@
        flatten
        set))
 
+(defn format-missing-step-fns
+  "Return a string representation of the Clojure code that should be written in
+  order to define the missing step functions."
+  [missing-step-fns]
+  (format "Please write step functions with the following signatures:\n%s"
+          (s/join "\n\n"
+                  (sort
+                   (for [m missing-step-fns]
+                     (format "(%s \"%s\" (fn [context] ...))"
+                             (-> m :type name s/capitalize)
+                             (:text m)))))))
+
 (defn is-executable?
+  "Return an error either if features are not executable, where the second item
+  in the 2-vector is a string indicating how to write the missing step
+  functions."
   [features]
   (let [missing-step-fns (get-missing-step-fns features)]
     (if (seq missing-step-fns)
-      [false missing-step-fns]
-      [true nil])))
+      [nil (format-missing-step-fns missing-step-fns)]
+      [features nil])))
+
+(defn add-step-fns
+  "Assign a step function, from step-registry, to each step map (under its :fn
+  key) of each scenario of each feature in features."
+  [step-registry features]
+  (->> features
+       (map (partial add-step-fns-to-feature step-registry))
+       is-executable?))
 
 (defn bind
-  "See https://adambard.com/blog/acceptable-error-handling-in-clojure/."
+  "Call f on val if err is nil, otherwise return [nil err]
+  See https://adambard.com/blog/acceptable-error-handling-in-clojure/."
   [f [val err]]
   (if (nil? err)
     (f val)
     [nil err]))
 
 (defmacro err->>
+  "Thread-last val through all fns, each wrapped in bind.
+  See https://adambard.com/blog/acceptable-error-handling-in-clojure/."
   [val & fns]
-  `(->> [~val nil]
-        ~@(map (fn [f]
-                 `(bind ~f))
-               fns)))
+  (let [fns (for [f fns] `(bind ~f))]
+    `(->> [~val nil]
+          ~@fns)))
+
+(defn update-steps
+  "Update every step set within every scenario within every feature in features
+  by calling the steps-updater function on the seq of steps. Returns the
+  'modified' features seq."
+  [features steps-updater]
+  (->> features
+       (map (fn [feature]
+              (assoc
+               feature
+               :scenarios
+               (->> (:scenarios feature)
+                    (map (fn [scenario]
+                           (assoc
+                            scenario
+                            :steps
+                            (steps-updater (:steps scenario)))))))))))
+
+(defn execute-step
+  "Execute step by calling its step function on ctx; return a map documenting
+  the execution of the step. Documents start and end times immediately before
+  and after the step is executed. Catches any exception and sets the :err key
+  to a string representation of the exception. The updated context will be set
+  to :ctx-after-exec. If the return value is not a map, we embed it in a map
+  under :step-retern-value."
+  [step ctx]
+  (let [start-time (java.util.Date.)
+        [ctx-after-exec err]
+        (try
+          [((:fn step) ctx) nil]
+          (catch Exception e [nil (str "caught exception: " (.getMessage e))]))
+        end-time (java.util.Date.)
+        ctx-after-exec
+        (if (and (nil? err) (not (map? ctx-after-exec)))
+          {:step-return-value ctx-after-exec}
+          ctx-after-exec)]
+    {:start-time start-time
+     :end-time end-time
+     :ctx-after-exec ctx-after-exec
+     :err err}))
+
+(defn execute-steps
+  "Execute all steps in order by calling step-0 with ctx, then step-1 with the
+  output of step-0, etc. Recursive."
+  [ctx [first-step & rest-steps]]
+  (let [execution (if (nil? ctx) nil (execute-step first-step ctx))
+        executed-step (assoc first-step :execution execution)]
+    (if rest-steps
+      (cons executed-step (execute-steps (:ctx-after-exec execution) rest-steps))
+      (list executed-step))))
+
+(defn execute
+  "Execute each scenario within each feature of features by running all of the
+  step functions of each scenario in order. Return the features, where each
+  of the feature's scenario's steps are updated with an :execution key whose
+  value is a map representing the execution of the step."
+  [initial-ctx features]
+  (update-steps
+   features
+   (partial execute-steps initial-ctx)))
 
 (defn run
   "Run seq of features matching tags using the step functions defined in
   step-registry"
-  [features tags step-registry]
-  (let [features-to-run (get-features-to-run features tags)
-        features-with-step-fns (add-step-fns features-to-run step-registry)
-        is-executable (is-executable? features-with-step-fns)]
-    [is-executable features-with-step-fns]))
+  [features tags step-registry & {:keys [initial-ctx] :or {initial-ctx {}}}]
+  (err->> features
+          (partial get-features-to-run tags)
+          (partial add-step-fns step-registry)
+          (partial execute initial-ctx)))
