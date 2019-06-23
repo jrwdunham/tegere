@@ -37,4 +37,24 @@
                 (fn [context] (update-step-rets context :looks-quizically))}}]
     (run features fake-registry config))
 
+  (let [features [(parse monkey-feature) (parse monkey-feature)]
+        config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
+                :stop false}
+        fake-registry
+        {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
+         :when {"I give him a {fruit}"
+                (fn [context fruit]
+                  (update-step-rets context (keyword (format "give-%s" fruit))))}
+         :then {"he doesn't eat it" (fn [context] (update-step-rets context :not-eat))
+                ;"he is happy" (fn [context] (update-step-rets context :is-happy))
+                "he is happy" (fn [context] (update-step-rets context (/ 1 0)))
+                "he is sad" (fn [context] (update-step-rets context :is-sad))
+                "he looks at me loathingly"
+                (fn [context] (update-step-rets context :looks-loathingly))
+                "he looks at me quizically"
+                (fn [context] (update-step-rets context :looks-quizically))}}]
+    (run features fake-registry config))
+
+    (keyword "a-banana")
+
 )

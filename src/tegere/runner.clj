@@ -72,11 +72,21 @@
             [nil "No features match the supplied tags"]
             [features nil])))))
 
-(defn get-step-fns
-  "Get the step functions in step-registry that match step.
+(defn step-fn-regex-matches-step-text
+  [step-fn-regex step-text]
+  (= step-fn-regex step-text)
+)
+
+(defn get-step-fn
+  "Get the step function in step-registry that matches step.
   TODO: :text will be a regular expression in some cases; account for this!"
-  [step-registry step]
-  (get-in step-registry ((juxt :type :text) step)))
+  [step-registry {step-type :type step-text :text}]
+  ; (get-in step-registry ((juxt :type :text) step))
+  (->> step-registry
+       step-type
+       (filter (fn [[step-fn-regex step-fn]]
+                 (step-fn-regex-matches-step-text step-fn-regex step-text)))
+       first))
 
 (defn add-step-fns-to-scenario
   "Assign a step function, from step-registry, to each step map (under its :fn
@@ -86,7 +96,7 @@
    scenario
    :steps
    (map (fn [step]
-          (assoc step :fn (get-step-fns step-registry step)))
+          (assoc step :fn (get-step-fn step-registry step)))
         (:steps scenario))))
 
 (defn add-step-fns-to-feature
