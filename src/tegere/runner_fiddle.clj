@@ -21,19 +21,20 @@
 (comment
 
   (let [features [(parse monkey-feature) (parse monkey-feature)]
-        tags {:and-tags #{"monkeys" "fruit-reactions"}}
+        config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
+                :stop false}
         fake-registry
         {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
          :when {"I give him a banana" (fn [context] (update-step-rets context :give-banana))
                 "I give him a pear" (fn [context] (update-step-rets context :give-pear))}
          :then {"he doesn't eat it" (fn [context] (update-step-rets context :not-eat))
-                "he is happy" (fn [context] (update-step-rets context :is-happy))
-                ;; "he is happy" (fn [context] (update-step-rets context (/ 1 0)))
+                ;"he is happy" (fn [context] (update-step-rets context :is-happy))
+                "he is happy" (fn [context] (update-step-rets context (/ 1 0)))
                 "he is sad" (fn [context] (update-step-rets context :is-sad))
                 "he looks at me loathingly"
                 (fn [context] (update-step-rets context :looks-loathingly))
                 "he looks at me quizically"
                 (fn [context] (update-step-rets context :looks-quizically))}}]
-    (run features tags fake-registry))
+    (run features fake-registry config))
 
 )

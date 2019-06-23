@@ -159,23 +159,6 @@
     `(->> [~val nil]
           ~@fns)))
 
-(defn update-steps
-  "Update every step set within every scenario within every feature in features
-  by calling the steps-updater function on the seq of steps. Returns the
-  'modified' features seq."
-  [features steps-updater]
-  (->> features
-       (map (fn [feature]
-              (assoc
-               feature
-               :scenarios
-               (->> (:scenarios feature)
-                    (map (fn [scenario]
-                           (assoc
-                            scenario
-                            :steps
-                            (steps-updater (:steps scenario)))))))))))
-
 (defn execute-step
   "Execute step by calling its step function on ctx; return a map documenting
   the execution of the step. Documents start and end times immediately before
@@ -209,21 +192,68 @@
       (cons executed-step (execute-steps (:ctx-after-exec execution) rest-steps))
       (list executed-step))))
 
+(defn execute-steps-map
+  [ctx {:keys [steps] :as steps-map}]
+  (assoc steps-map
+         :steps
+         (execute-steps ctx steps)))
+
+(defn get-steps-map-seq
+  "Return a lazy sequence of steps maps. These are maps with :steps keys.
+  There is one steps map for each scenario in each feature in the supplied
+  seq of features."
+  ([[first-feature & rest-features]]
+    (get-steps-map-seq first-feature rest-features (:scenarios first-feature)))
+  ([first-feature features [first-scenario & rest-scenarios]]
+   (lazy-seq
+    (cons
+     {:steps (:steps first-scenario)
+      :feature (select-keys first-feature [:name :description :tags])
+      :scenario (select-keys first-scenario [:description :tags])}
+     (cond rest-scenarios
+           (get-steps-map-seq first-feature features rest-scenarios)
+           features (get-steps-map-seq features)
+           :else nil)))))
+
+(defn step-executed-without-error
+  "Return true if the final step of the supplied steps map executed without
+  error, false otherwise."
+  [executed-steps-map]
+  (let [final-step (-> executed-steps-map :steps last)]
+    (and (:execution final-step) (not (:err final-step)))))
+
+(defn execute-steps-map-seq
+  "Execute all of the 'steps maps' in the sequence thereof passed as the third
+  argument. Recursive so that we can break out of execution if a steps map fails."
+  [ctx stop [first-steps-map & rest-steps-maps]]
+  (let [executed-steps-map (execute-steps-map ctx first-steps-map)]
+    (cons
+     executed-steps-map
+     (if rest-steps-maps
+       (if (or (step-executed-without-error executed-steps-map) (not stop))
+         (execute-steps-map-seq ctx stop rest-steps-maps)
+         rest-steps-maps)
+       nil))))
+
 (defn execute
   "Execute each scenario within each feature of features by running all of the
-  step functions of each scenario in order. Return the features, where each
-  of the feature's scenario's steps are updated with an :execution key whose
-  value is a map representing the execution of the step."
-  [initial-ctx features]
-  (update-steps
-   features
-   (partial execute-steps initial-ctx)))
+  step functions of each scenario in order. Return a seq of 'steps maps', maps
+  that describe a single step set of a single scenario. Each step of each steps
+  map each will contain an :execution key whose value is a map representing the
+  execution of the step. The stop param is a boolean; if true, then we will skip
+  execution of subsequent steps after the first failure; if false, we run all
+  step sets, ignoring previous failures."
+  [initial-ctx stop features]
+  (->> features
+       get-steps-map-seq
+       ((partial execute-steps-map-seq initial-ctx stop))))
 
 (defn run
   "Run seq of features matching tags using the step functions defined in
   step-registry"
-  [features tags step-registry & {:keys [initial-ctx] :or {initial-ctx {}}}]
+  [features step-registry {:keys [tags stop] :or {tags {} stop false}}
+   & {:keys [initial-ctx] :or {initial-ctx {}}}]
   (err->> features
           (partial get-features-to-run tags)
           (partial add-step-fns step-registry)
-          (partial execute initial-ctx)))
+          (partial execute initial-ctx stop)))
