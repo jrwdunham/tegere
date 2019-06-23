@@ -2,7 +2,8 @@
   "Defines run, which runs a seq of features that match a supplied tags map,
   using the step functions defined in a supplied step-registry"
   (:require [clojure.string :as s]
-            [clojure.set :refer [intersection]]))
+            [clojure.set :refer [intersection]]
+            [tegere.utils :refer [bind err->>]]))
 
 (defn get-scenarios-matching-pred
   "Return subset of scenarios matching pred according to their :all-tags key"
@@ -72,20 +73,38 @@
             [nil "No features match the supplied tags"]
             [features nil])))))
 
-(defn step-fn-regex-matches-step-text
-  [step-fn-regex step-text]
-  (= step-fn-regex step-text)
-)
+(defn get-step-fn-args
+  "Return a vector of arguments (strings) from step-text that match any patterns
+  present in step-fn-text. If there is no match, return nil; if there are no
+  args, return []. Examples:
+  'I ate {fruit-type}' 'I ate a banana' => ['a banana']
+  'I ate a banana'     'I ate a banana' => []
+  'I saw {fruit-type}' 'I ate a banana' => nil
+  'I ate a pear'       'I ate a banana' => nil"
+  [step-fn-text step-text]
+  (let [var-name-regex #"\{[-\w]+\}"
+        step-fn-vars (re-seq var-name-regex step-fn-text)
+        step-fn-regex
+        (-> step-fn-text (s/replace var-name-regex "(.+)") re-pattern)
+        matches (re-find step-fn-regex step-text)]
+    (if matches
+      (if (sequential? matches) (rest matches) ())
+      nil)))
 
 (defn get-step-fn
-  "Get the step function in step-registry that matches step.
-  TODO: :text will be a regular expression in some cases; account for this!"
+  "Get the step function in step-registry that matches step. If the function
+  takes arguments from the step text, we still return a unary function over
+  contexts, but it is a closure that receives the required string arguments
+  from the matching step text."
   [step-registry {step-type :type step-text :text}]
-  ; (get-in step-registry ((juxt :type :text) step))
   (->> step-registry
        step-type
-       (filter (fn [[step-fn-regex step-fn]]
-                 (step-fn-regex-matches-step-text step-fn-regex step-text)))
+       (map (fn [[step-fn-text step-fn]]
+              (let [step-fn-args (get-step-fn-args step-fn-text step-text)]
+                (if (seq step-fn-args)
+                  (fn [ctx] (apply (partial step-fn ctx) step-fn-args))
+                  step-fn))))
+       (filter some?)
        first))
 
 (defn add-step-fns-to-scenario
@@ -152,22 +171,6 @@
   (->> features
        (map (partial add-step-fns-to-feature step-registry))
        is-executable?))
-
-(defn bind
-  "Call f on val if err is nil, otherwise return [nil err]
-  See https://adambard.com/blog/acceptable-error-handling-in-clojure/."
-  [f [val err]]
-  (if (nil? err)
-    (f val)
-    [nil err]))
-
-(defmacro err->>
-  "Thread-last val through all fns, each wrapped in bind.
-  See https://adambard.com/blog/acceptable-error-handling-in-clojure/."
-  [val & fns]
-  (let [fns (for [f fns] `(bind ~f))]
-    `(->> [~val nil]
-          ~@fns)))
 
 (defn execute-step
   "Execute step by calling its step function on ctx; return a map documenting

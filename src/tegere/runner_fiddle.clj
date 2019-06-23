@@ -44,7 +44,7 @@
         {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
          :when {"I give him a {fruit}"
                 (fn [context fruit]
-                  (update-step-rets context (keyword (format "give-%s" fruit))))}
+                  (update-step-rets context (keyword (format "give-with-var-%s" fruit))))}
          :then {"he doesn't eat it" (fn [context] (update-step-rets context :not-eat))
                 ;"he is happy" (fn [context] (update-step-rets context :is-happy))
                 "he is happy" (fn [context] (update-step-rets context (/ 1 0)))
@@ -55,6 +55,16 @@
                 (fn [context] (update-step-rets context :looks-quizically))}}]
     (run features fake-registry config))
 
-    (keyword "a-banana")
+    (get-step-fn-args
+     "I give {recipient} a {fruit}"
+     "I give him a big ole banana")  ;; ("him" "big ole banana")
+
+    (get-step-fn-args
+     "I gave {recipient} a {fruit}"
+     "I give him a big ole banana")  ;; => nil
+
+    (get-step-fn-args
+     "I give him a big ole banana"
+     "I give him a big ole banana")  ;; => ()
 
 )

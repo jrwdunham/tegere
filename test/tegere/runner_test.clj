@@ -39,18 +39,20 @@
    "\n"))
 
 (defn count-scenarios
-  [features]
-  (reduce +
-          (map (fn [feat] (-> feat :scenarios count)) features)))
+  [[features err]]
+  (if err
+    0
+    (reduce +
+            (map (fn [feat] (-> feat :scenarios count)) features))))
 
 (t/deftest all-tags-filtering-test
   (t/testing "All/and tag filters work"
     (let [features [(parse monkey-feature)]
-          scenario-count (count-scenarios features)
+          scenario-count (count-scenarios [features nil])
           get-match-count (fn [expr]
                             (count-scenarios
                              (sut/get-features-to-run
-                              features expr)))]
+                              expr features)))]
       (do
         (t/is (= 3 scenario-count))
         (t/is (= 3 (get-match-count
@@ -71,11 +73,11 @@
 (t/deftest any-tags-filtering-test
   (t/testing "Any/or tag filters work"
     (let [features [(parse monkey-feature)]
-          scenario-count (count-scenarios features)
+          scenario-count (count-scenarios [features nil])
           get-match-count (fn [expr]
                             (count-scenarios
                              (sut/get-features-to-run
-                              features expr)))]
+                              expr features)))]
       (do
         (t/is (= 3 (get-match-count
                     {:or-tags #{"monkeys"}})))
@@ -95,11 +97,11 @@
 (t/deftest all-tags-override-or-tags-test
   (t/testing "All/and tag filters override any/or tag filters"
     (let [features [(parse monkey-feature)]
-          scenario-count (count-scenarios features)
+          scenario-count (count-scenarios [features nil])
           get-match-count (fn [expr]
                             (count-scenarios
                              (sut/get-features-to-run
-                              features expr)))]
+                              expr features)))]
       (do
         (t/is (= 3 (get-match-count
                     {:and-tags #{"monkeys"}
