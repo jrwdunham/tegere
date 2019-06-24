@@ -19,6 +19,6 @@
         (t/is (= (-> scenarios last :tags) (list "last-scenario")))
         (t/is (= (-> scenarios last :steps)
                  (list
-                  {:type "Given" :text "x"}
-                  {:type "When" :text "y"}
-                  {:type "Then" :text "z"})))))))
+                  {:type :given :text "x"}
+                  {:type :when :text "y"}
+                  {:type :then :text "z"})))))))

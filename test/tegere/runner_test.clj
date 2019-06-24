@@ -11,7 +11,7 @@
    "@monkeys\n"
    "Feature: Monkeys behave as expected\n"
    "  Experimenters want to ensure that their monkey simulations are behaving\n"
-   "  corectly.\n"
+   "  correctly.\n"
    "\n"
    "\n"
    "  # This is a comment about this scenario ...\n"
