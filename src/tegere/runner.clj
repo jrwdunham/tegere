@@ -101,9 +101,8 @@
        step-type
        (map (fn [[step-fn-text step-fn]]
               (let [step-fn-args (get-step-fn-args step-fn-text step-text)]
-                (if (seq step-fn-args)
-                  (fn [ctx] (apply (partial step-fn ctx) step-fn-args))
-                  step-fn))))
+                (when step-fn-args
+                  (fn [ctx] (apply (partial step-fn ctx) step-fn-args))))))
        (filter some?)
        first))
 

@@ -18,7 +18,32 @@
        (conj step-rets val)
        [val]))))
 
+;; A fake registry of step functions to test our Monkey Feature
+(def fake-registry
+  {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
+   :when {"I give him a banana" (fn [context] (update-step-rets context :give-banana))
+          "I give him a pear" (fn [context] (update-step-rets context :give-pear))}
+   :then {"he doesn't eat it" (fn [context] (update-step-rets context :not-eat))
+          "he is happy" (fn [context] (update-step-rets context (/ 1 0)))
+          "he is sad" (fn [context] (update-step-rets context :is-sad))
+          "he looks at me loathingly"
+          (fn [context] (update-step-rets context :looks-loathingly))
+          "he looks at me quizically"
+          (fn [context] (update-step-rets context :looks-quizically))}})
+
 (comment
+
+  (get-step-fn-args "I ate a {fruit-type}" "I ate a banana")
+
+  (get-step-fn-args "I ate a banana" "I ate a pear")
+
+  (get-step-fn-args "I ate a pear" "I ate a pear")
+
+  ((get-step-fn fake-registry {:type :when :text "I give him a pear"}) {})
+
+  ((get-step-fn fake-registry {:type :when :text "I give him a banana"}) {})
+
+  ((get-step-fn fake-registry {:type :when :text "I give him a pear"}) {})
 
   (let [features [(parse monkey-feature) (parse monkey-feature)]
         config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
