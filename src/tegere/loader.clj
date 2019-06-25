@@ -50,6 +50,14 @@
        (map deref)
        (apply (partial merge-with merge))))
 
+(defn load-steps-old-2
+  "Load step registries dynamically from files under root-path and return a
+  single registry map."
+  [root-path]
+  (doseq [path (find-clojure-files root-path)]
+    (-> path str load-file))
+  @registry)
+
 (defn load-steps
   "Load step registries dynamically from files under root-path and return a
   single registry map."

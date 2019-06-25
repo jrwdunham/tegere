@@ -4,7 +4,7 @@
 
 (comment
 
-  (main (list "examples/apes" "--tags=bonobos,monkeys" "--stop"))
+  (main (list "src/examples/apes" "--tags=bonobos,monkeys" "--stop"))
 
   (seq (.getURLs (java.lang.ClassLoader/getSystemClassLoader)))
 
