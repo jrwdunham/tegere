@@ -6,6 +6,8 @@
 
   (main (list "examples/apes" "--tags=bonobos,monkeys" "--stop"))
 
+  (seq (.getURLs (java.lang.ClassLoader/getSystemClassLoader)))
+
   ((comp inc #(* % 8)) 1)
 
   ((comp #(* % 8) inc) 1)

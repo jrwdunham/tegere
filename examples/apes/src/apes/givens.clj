@@ -1,7 +1,7 @@
-(ns apes.steps.givens
+(ns apes.givens
   (:require [clojure.string :as s]
             [tegere.steps :refer [Given When Then]]
-            [apes.steps.utils :refer [update-steps-rets]]))
+            [apes.utils :refer [update-steps-rets]]))
 
 (Given "a {animal}"
        (fn [context animal]

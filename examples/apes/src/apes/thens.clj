@@ -1,7 +1,7 @@
-(ns apes.steps.thens
+(ns apes.thens
   (:require [clojure.string :as s]
             [tegere.steps :refer [Then]]
-            [apes.steps.utils :refer [update-steps-rets]]))
+            [apes.utils :refer [update-steps-rets]]))
 
 (Then "a result"
       (fn [context] (update-step-rets context :a-result)))
