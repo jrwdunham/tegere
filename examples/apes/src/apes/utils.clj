@@ -1,4 +1,4 @@
-(ns apes.steps.utils)
+(ns apes.utils)
 
 (defn update-step-rets
   "Convenience fiddle function that appends val to the :step-rets key of the map

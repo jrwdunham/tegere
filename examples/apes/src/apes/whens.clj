@@ -1,7 +1,7 @@
 (ns apes.whens
   (:require [clojure.string :as s]
             [tegere.steps :refer [Given When Then]]
-            [apes.utils :refer [update-steps-rets]]))
+            [apes.utils :refer [update-step-rets]]))
 
 (When "an action"
        (fn [context]

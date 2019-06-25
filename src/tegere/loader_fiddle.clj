@@ -61,6 +61,7 @@
       )
     ))
 
+;; TODO: this seems to work!
 (defn yyy
   [dir-path]
   (when-let [namespaces-in-dir (find-namespaces-in-dir dir-path)]
@@ -75,11 +76,23 @@
 )
 
 
-(def my-path "/Users/joeldunham/Development/tegere/tegere/examples/apes")
+;; This works
+(def my-path "/Users/joeldunham/Development/tegere/tegere/examples/apes/src")
+
+;; This does not work
+(def my-other-path "/Users/joeldunham/Development/tegere/tegere/examples/apes")
 
 (comment
 
+  (* 8 8)
+
   (yyy my-path)
+
+  (require '[tegere.steps :as tegsteps])
+
+  tegsteps/registry
+
+  (yyy my-other-path)
 
   (xxx my-path)
 
