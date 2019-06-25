@@ -16,13 +16,9 @@
 
   (parse-arg "run")
 
-  (s/starts-with? "-a" "-")
-
   (parse-arg "--tags=monkeys")
 
   (parse-arg "--stop")
-
-  (update {:a [2]} :a conj 1)
 
   (parse-arg "")
 

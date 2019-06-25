@@ -6,6 +6,12 @@
 
 (comment
 
+  (let [x ["/path/"]]
+    (-> x
+        first
+        (or ".")
+        ))
+
   (find-feature-files "examples/apes")
 
   (find-clojure-files "examples/apes")

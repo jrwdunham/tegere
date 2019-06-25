@@ -4,6 +4,8 @@
 
 (comment
 
+  (main (list "examples/apes" "--tags=monkeys" "--tags=behaviour" "--tags=a,b,c"))
+
   (step-label-prsr "Given")
 
   (step-label-prsr "When")
