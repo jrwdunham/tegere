@@ -1,10 +1,16 @@
 (ns tegere.loader-fiddle
   "Fiddle file for playing around with loader.clj."
   (:require [clojure.string :as s]
+            [tegere.parser :refer [parse]]
             [tegere.loader :refer :all]))
 
 
 (comment
+
+  (let [fs (slurp "examples/apes/features/monkey-behaviour.feature")]
+    (parse fs)
+    ;(str fs)
+  )
 
   (let [x ["/path/"]]
     (-> x

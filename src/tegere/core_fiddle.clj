@@ -4,7 +4,11 @@
 
 (comment
 
-  (main (list "examples/apes" "--tags=monkeys" "--tags=behaviour" "--tags=a,b,c"))
+  (main (list "examples/apes" "--tags=bonobos,monkeys" "--stop"))
+
+  ((comp inc #(* % 8)) 1)
+
+  ((comp #(* % 8) inc) 1)
 
   (step-label-prsr "Given")
 

@@ -1,6 +1,8 @@
 (ns tegere.loader
   "Functionality for loading feature and steps files."
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as s]
+            [tegere.parser :refer [parse]]
+            [tegere.steps :refer [registry]]))
 
 (defn find-files-with-extensions
   "Return all files under root-path that have any of the file extensions in
@@ -37,7 +39,7 @@
         (get 'registry))
     (catch Exception e nil)))
 
-(defn load-steps
+(defn load-steps-old
   "Load step registries dynamically from files under root-path and return a
   single registry map."
   [root-path]
@@ -47,3 +49,17 @@
        (filter some?)
        (map deref)
        (apply (partial merge-with merge))))
+
+(defn load-steps
+  "Load step registries dynamically from files under root-path and return a
+  single registry map."
+  [root-path]
+  (doseq [path (find-clojure-files root-path)]
+    (-> path str load-file))
+  @registry)
+
+(defn load-feature-files
+  [root-path]
+  (->> root-path
+       find-feature-files
+       (map (comp parse slurp str))))

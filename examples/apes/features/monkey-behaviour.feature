@@ -25,3 +25,4 @@ Feature: Monkeys behave as expected
     Given a monkey
     When I present him with an orangutan
     Then he is happy
+
