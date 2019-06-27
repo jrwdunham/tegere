@@ -6,6 +6,9 @@
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/tools.namespace "0.2.11"]
                  [com.cemerick/pomegranate "1.1.0"]
+                 [me.raynes/fs "1.4.6"]
                  [instaparse "1.4.10"]]
   :main ^:skip-aot tegere.core
+  :target-path "target/%s"
+  :profiles {:uberjar {:aot :all}}
   :repl-options {:init-ns tegere.core})

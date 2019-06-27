@@ -1,6 +1,7 @@
 (ns tegere.loader-test
   "Tests for the loading of feature and steps files."
   (:require [tegere.loader :as sut]
+            [tegere.steps :as tegsteps]
             [clojure.test :as t]))
 
 (t/deftest find-feature-files-test
@@ -10,25 +11,32 @@
               "examples/apes/features/bonobo-behaviour.feature"
               "examples/apes/features/monkey-behaviour.feature")))))
 
-(t/deftest find-clojure-files-test
-  (t/testing "We can find Clojure source files under a path"
-    (t/is (= (map str (sut/find-clojure-files "examples/apes"))
-             (list
-              "examples/apes/steps/monkeys.clj"
-              "examples/apes/steps/bonobos.clj"
-              "examples/apes/steps/orangutans.clj")))))
-
-(t/deftest load-steps-files-test
+(t/deftest load-clojure-source-files-under-path-test
   (t/testing "We can load Clojure steps files and extract their registry maps"
-    (let [loaded-registry (sut/load-steps "examples/apes")
+    (reset! tegsteps/registry {})
+    (sut/load-clojure-source-files-under-path "examples/apes")
+    (let [loaded-registry @tegsteps/registry
           registry-keys (set (keys loaded-registry))
           step-fn-texts (->> loaded-registry
                              vals (map keys) flatten set)
-          fs [(-> loaded-registry :given (get "a setup"))
-              (-> loaded-registry :when (get "an action"))
-              (-> loaded-registry :then (get "a result"))]]
-      (do
+          a-given (-> loaded-registry :given (get "a {animal}"))
+          a-when (-> loaded-registry :when (get "I give him a {noun}"))
+          a-then (-> loaded-registry :then (get "he is {adjective}"))]
+    (do
         (t/is (= #{:given :when :then} registry-keys))
-        (t/is (= #{"an action" "a setup" "a result"} step-fn-texts))
-        (t/is (= [:an-orangutan-setup :an-action :a-result]
-                 (map (fn [f] (f {})) fs)))))))
+        (t/is (= #{"a {animal}"
+                   "everything is all good"
+                   "a result"
+                   "he doesn't eat it"
+                   "he is {adjective}"
+                   "he looks at me {adverb}"
+                   "an action"
+                   "I give him a {noun}"
+                   "I present him with an orangutan"}
+                 step-fn-texts))
+        (t/is (= [:a-monkey :give-him-a-banana :is-happy]
+                 (-> {}
+                     (a-given "monkey")
+                     (a-when "banana")
+                     (a-then "happy")
+                     :step-rets)))))))
