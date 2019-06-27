@@ -1,8 +1,37 @@
 (ns tegere.loader
   "Functionality for loading feature and steps files."
-  (:require [clojure.string :as s]
+  (:require [clojure.java.io :as io]
+            [clojure.string :as s]
+            [clojure.tools.namespace.find :as ctn-find]
             [tegere.parser :refer [parse]]
-            [tegere.steps :refer [registry]]))
+            [tegere.steps :refer [registry]])
+  (:import java.io.File)
+  (:use [clojure.java.io :only (as-url)]))
+
+(defn add-to-system-classpath
+  "Add a path (string) to the system class loader"
+  [dir-path]
+  (let [field (aget (.getDeclaredFields java.net.URLClassLoader) 0)]
+    (.setAccessible field true)
+    (let [ucp (.get field (ClassLoader/getSystemClassLoader))]
+      (.addURL ucp (as-url (File. dir-path))))))
+
+(defn find-clojure-sources-in-dir
+  "Return a seq of Clojure source files under dir-path."
+  [dir-path]
+  (-> dir-path
+      io/as-file
+      ctn-find/find-clojure-sources-in-dir
+      seq))
+
+(defn load-clojure-source-files-under-path
+  "Load all Clojure source files under dir-path after adding dir-path to the
+  system classpath."
+  [dir-path]
+  (when-let [clojure-sources-in-dir (find-clojure-sources-in-dir dir-path)]
+    (add-to-system-classpath dir-path)
+    (doseq [clojure-source-file clojure-sources-in-dir]
+      (load-file (str clojure-source-file)))))
 
 (defn find-files-with-extensions
   "Return all files under root-path that have any of the file extensions in
