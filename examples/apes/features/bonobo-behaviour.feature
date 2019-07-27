@@ -20,7 +20,7 @@ Feature: Bonobos behave in their own way
    
   # This is a comment about this scenario outline...
   @orangutan
-  Scenario: Bonobos are indifferent orangutans.
+  Scenario: Bonobos are indifferent to orangutans.
     Given a bonobo
     When I present him with an orangutan
     Then he is moderately nonchalantly bemused

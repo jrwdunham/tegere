@@ -1,8 +1,6 @@
 (ns tegere.runner-fiddle
   "Fiddle file for playing around with runner.clj."
-  (:require [clojure.string :as s]
-            [clojure.set :refer [intersection]]
-            [tegere.runner :refer :all]
+  (:require [tegere.runner :refer :all]
             [tegere.parser :refer [parse]]
             [tegere.grammar-fiddle :refer [monkey-feature]]))
 
@@ -30,6 +28,29 @@
           (fn [context] (update-step-rets context :looks-loathingly))
           "he looks at me quizically"
           (fn [context] (update-step-rets context :looks-quizically))}})
+
+(defn for-repl
+  "Call this in a REPL to see how printing to stdout works."
+  [& {:keys [stop?] :or {stop? false}}]
+  (let [features [(parse monkey-feature) (parse monkey-feature)]
+        config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
+                :stop stop?}
+        fake-registry
+        {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
+         :when {"I give him a banana"
+                (fn [context] (update-step-rets context :give-banana))
+                "I give him a pear"
+                (fn [context] (update-step-rets context :give-pear))}
+         :then {"he doesn't eat it"
+                (fn [context] (assert (= :not-eat true)
+                                      "He DOES eat it you fool!"))
+                "he is happy" (fn [context] (update-step-rets context (/ 1 0)))
+                "he is sad" (fn [context] (update-step-rets context :is-sad))
+                "he looks at me loathingly"
+                (fn [context] (update-step-rets context :looks-loathingly))
+                "he looks at me quizically"
+                (fn [context] (update-step-rets context :looks-quizically))}}]
+    (run features fake-registry config)))
 
 (comment
 
@@ -80,16 +101,16 @@
                 (fn [context] (update-step-rets context :looks-quizically))}}]
     (run features fake-registry config))
 
-    (get-step-fn-args
-     "I give {recipient} a {fruit}"
-     "I give him a big ole banana")  ;; ("him" "big ole banana")
+  (get-step-fn-args
+   "I give {recipient} a {fruit}"
+   "I give him a big ole banana")  ;; ("him" "big ole banana")
 
-    (get-step-fn-args
-     "I gave {recipient} a {fruit}"
-     "I give him a big ole banana")  ;; => nil
+  (get-step-fn-args
+   "I gave {recipient} a {fruit}"
+   "I give him a big ole banana")  ;; => nil
 
-    (get-step-fn-args
-     "I give him a big ole banana"
-     "I give him a big ole banana")  ;; => ()
+  (get-step-fn-args
+   "I give him a big ole banana"
+   "I give him a big ole banana")  ;; => ()
 
 )

@@ -209,14 +209,17 @@
 (defn repair-conj-steps
   "Repair any defective (:and and :but) :type values in steps by replacing the
   defective value with the last non-defective one. Recursive because
-  (map repair (cons nil steps) steps) fail when two or more 'conj' steps are
+  (map repair (cons nil steps) steps) fails when two or more 'conj' steps are
   adjacent."
   ([steps] (repair-conj-steps steps nil))
   ([[first-step & rest-steps] prev-step-type]
    (let [first-step-type (:type first-step)
          first-step
          (if (some #{first-step-type} [:and :but])
-           (assoc first-step :type prev-step-type)
+           (-> first-step
+               (assoc :type prev-step-type)
+               (assoc :original-type first-step-type))
+           ;; (assoc first-step :type prev-step-type)
            first-step)]
      (if rest-steps
        (cons first-step (repair-conj-steps rest-steps (:type first-step)))
