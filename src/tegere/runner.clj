@@ -4,7 +4,7 @@
   (:require [clojure.string :as s]
             [clojure.pprint :as pprint]
             [clojure.set :refer [intersection]]
-            [tegere.utils :refer [bind err->>]]
+            [tegere.utils :as u]
             [tegere.print :as tegprn]))
 
 (defn get-scenarios-matching-pred
@@ -261,18 +261,28 @@
 (defn execute-steps-map-seq
   "Execute all of the 'steps maps' in the sequence thereof passed as the third
   argument. Recursive so that we can break out of execution if a steps map fails."
-  [ctx stop print-feat-scen? [first-steps-map & rest-steps-maps]]
-  (when print-feat-scen?
-    (tegprn/print-feature-scenario
-     (:feature first-steps-map) (:scenario first-steps-map)))
-  (let [executed-steps-map (execute-steps-map ctx first-steps-map)]
-    (cons
-     executed-steps-map
-     (if rest-steps-maps
-       (if (or (step-executed-without-error executed-steps-map) (not stop))
-         (execute-steps-map-seq ctx stop false rest-steps-maps)
-         rest-steps-maps)
-       nil))))
+  [ctx
+   {:keys [stop last-feature last-scenario] :or {stop false} :as config}
+   [first-steps-map & rest-steps-maps]]
+  (let [feature (:feature first-steps-map)
+        scenario (:scenario first-steps-map)]
+    (when (or (nil? last-feature) (not= last-feature feature))
+      (tegprn/print-feature feature))
+    (when (or (nil? last-scenario) (not= last-scenario scenario))
+      (tegprn/print-scenario scenario))
+    (let [executed-steps-map (execute-steps-map ctx first-steps-map)]
+      (cons
+       executed-steps-map
+       (if rest-steps-maps
+         (if (or (step-executed-without-error executed-steps-map) (not stop))
+           (execute-steps-map-seq
+            ctx
+            (-> config
+                (assoc :last-feature feature)
+                (assoc :last-scenario scenario))
+            rest-steps-maps)
+           rest-steps-maps)
+         nil)))))
 
 (defn execute
   "Execute each scenario within each feature of features by running all of the
@@ -285,90 +295,50 @@
   [initial-ctx stop features]
   (->> features
        get-steps-map-seq
-       ((partial execute-steps-map-seq initial-ctx stop true))))
+       ((partial execute-steps-map-seq initial-ctx {:stop stop}))))
 
-(defn step-execution-outcome
+(defn analyze-step-execution
   "Given a step execution map, return a reduced map containing the original
-  :feature and :scenario keys and a new :outcome key, whose value is a
-  keyword---:pass, :fail, or :error---indicating its outcome."
+  :feature and :scenario keys as well as a new :outcome key, whose value is a
+  keyword---:pass, :fail, or :error---indicating its outcome, and count keys
+  detailing how many steps passed, failed and were untested."
   [execution]
-  (let [last-err
-        (->> (:steps execution)
-             (map :execution)
-             (filter some?)
-             last
-             :err)]
+  (let [steps (:steps execution)
+        executions (->> steps (map :execution) (filter some?))
+        last-err (->> executions last :err)
+        step-pass-count (count (filter #(nil? (:err %)) executions))
+        step-untested-count (- (count steps) (count executions))
+        step-fail-count (- (count steps) step-pass-count step-untested-count)
+        [execution-pass-count execution-fail-count]
+        (if (nil? last-err) [1 0] [0 1])]
     (merge (select-keys execution [:feature :scenario])
-           {:outcome (get last-err :type :pass)})))
-
-(defn deep-merge-with
-  "Like merge-with, but merges maps recursively, applying the given fn
-  only when there's a non-map at a particular level.
-  (deep-merge-with + {:a {:b {:c 1 :d {:x 1 :y 2}} :e 3} :f 4}
-                     {:a {:b {:c 2 :d {:z 9} :z 3} :e 100}})
-  -> {:a {:b {:z 3, :c 3, :d {:z 9, :x 1, :y 2}}, :e 103}, :f 4}
-  Taken from https://clojuredocs.org/clojure.core/merge-with."
-  [f & maps]
-  (apply
-   (fn m [& maps]
-     (if (every? map? maps)
-       (apply merge-with m maps)
-       (apply f maps)))
-   maps))
-
-(defn feature-outcome-reducer
-  "Determine the pass/fail status of feature, all scenarios in scenarios, and all
-  steps within those scenarios, and upate the agg map accordingly. The agg map is
-  initizalized as::
-
-      {:features {:passed 0 :failed 0}
-       :scenarios {:passed 0 :failed 0}
-       :steps {:passed 0 :failed 0}}
-  "
-  [agg [feature scenarios]]
-  (let [steps
-        (apply (partial merge-with + {:passed 0 :failed 0})
-               (->> scenarios
-                    vals
-                    (map (fn [scen-val]
-                           (reduce
-                            (fn [agg [k v]]
-                              (let [new-k (if (some #{k} [:error :fail])
-                                            :failed :passed)]
-                                (merge-with + agg {new-k v})))
-                            {:passed 0 :failed 0}
-                            scen-val)))))
-        scenarios
-        (reduce (fn [agg [scen s-o]]
-                  (let [scen-failed
-                        (->> s-o
-                             ((juxt :error :fail))
-                             (filter int?)
-                             (reduce +)
-                             (< 0))
-                        rslt (if scen-failed {:failed 1} {:passed 1})]
-                    (merge-with + agg rslt)))
-                {:passed 0 :failed 0}
-                scenarios)
-        features (if (> (:failed scenarios) 0)
-                   {:failed 1} {:passed 1})]
-    (deep-merge-with + agg
-                     {:features features}
-                     {:scenarios scenarios}
-                     {:steps steps})))
+           {:step-pass-count step-pass-count
+            :step-untested-count step-untested-count
+            :step-fail-count step-fail-count
+            :execution-pass-count execution-pass-count
+            :execution-fail-count execution-fail-count
+            :outcome (get last-err :type :pass)})))
 
 (defn executions->outcome-map
   "Convert a seq of execution maps (with keys :steps, :feature and :scenario) and
   return an outcome map, which maps features (maps) to maps from scenarios (maps)
-  to step outcome maps like {:error 2, :fail 2}."
+  to maps that document step and execution pass/fail/untested counts."
   [executions]
   (->> executions
-       (map step-execution-outcome)
+       (map analyze-step-execution)
        (reduce (fn [agg new]
                  (update-in
                   agg
-                  ((juxt :feature :scenario :outcome) new)
-                  (fn [cnt] (if cnt (inc cnt) 1))))
+                  ((juxt :feature :scenario) new)
+                  (fn [existing-execution-analysis]
+                    (merge-with
+                     +
+                     existing-execution-analysis
+                     (select-keys new [:step-pass-count
+                                       :step-untested-count
+                                       :step-fail-count
+                                       :execution-pass-count
+                                       :execution-fail-count])))))
                {})))
 
 (defn outcome-map->outcome-summary-map
@@ -387,16 +357,47 @@
   The output is a much simpler data structure that summarizes the counts of
   features, scenarios and steps that passed and failed::
 
-      {:features {:passed 0 :failed 1}
-       :scenarios {:passed 0 :failed 1}
-       :steps {:passed 0 :failed 4}}
+       {:feature-pass-count n
+        :feature-fail-count n
+        :scenario-pass-count n
+        :scenario-fail-count n
+        :step-pass-count n
+        :step-fail-count n
+        :step-untested-count n}
   "
   [outcome-map]
   (reduce
-   feature-outcome-reducer
-   {:features {:passed 0 :failed 0}
-    :scenarios {:passed 0 :failed 0}
-    :steps {:passed 0 :failed 0}}
+   (fn [agg [feature scenarios]]
+     (let [steps-stats
+           (->> scenarios vals (apply merge-with +))
+           scenarios-stats
+           (->> scenarios
+                vals
+                (map (fn [step-stats-map]
+                       (if (= 0 (:execution-fail-count step-stats-map))
+                         {:scenario-pass-count 1
+                          :scenario-fail-count 0}
+                         {:scenario-pass-count 0
+                          :scenario-fail-count 1})))
+                (apply merge-with +))
+           feature-stats
+           (if (= 0 (:scenario-fail-count scenarios-stats))
+                  {:feature-pass-count 1 :feature-fail-count 0}
+                  {:feature-pass-count 0 :feature-fail-count 1})]
+       (merge-with +
+                   agg
+                   (select-keys steps-stats [:step-pass-count
+                                             :step-fail-count
+                                             :step-untested-count])
+                   scenarios-stats
+                   feature-stats)))
+   {:step-pass-count 0
+    :step-untested-count 0
+    :step-fail-count 0
+    :scenario-pass-count 0
+    :scenario-fail-count 0
+    :feature-pass-count 0
+    :feature-fail-count 0}
    outcome-map))
 
 (defn format-outcome-summary-map
@@ -410,23 +411,29 @@
 
   and the corresponding output would be::
 
+      0 features passed, 1 failed
+      0 scenarios passed, 1 failed
+      0 steps passed, 4 failed, 2 untested
+
+  TODO: add the total test execution time, e.g., 'Took 0m0.080s' and fill in the
+  '???' blanks in the following prescriptive template.
+
       0 features passed, 1 failed, ??? skipped, ??? untested
       0 scenarios passed, 1 failed, ??? skipped, ??? untested
-      0 steps passed, 4 failed, ??? skipped, ??? undefined, ??? untested
-
-  TODO: add the total test execution time, e.g., 'Took 0m0.080s'.
+      0 steps passed, 4 failed, ??? skipped, ??? undefined, 2 untested
   "
   [outcome-summary-map]
   (format
-   (str "\n%s features passed, %s failed, ??? skipped, ??? untested"
-        "\n%s scenarios passed, %s failed, ??? skipped, ??? untested"
-        "\n%s steps passed, %s failed, ??? skipped, ??? undefined, ??? untested\n")
-   (get-in outcome-summary-map [:features :passed])
-   (get-in outcome-summary-map [:features :failed])
-   (get-in outcome-summary-map [:scenarios :passed])
-   (get-in outcome-summary-map [:scenarios :failed])
-   (get-in outcome-summary-map [:steps :passed])
-   (get-in outcome-summary-map [:steps :failed])))
+   (str "\n%s features passed, %s failed"
+        "\n%s scenarios passed, %s failed"
+        "\n%s steps passed, %s failed, %s untested\n")
+   (:feature-pass-count outcome-summary-map)
+   (:feature-fail-count outcome-summary-map)
+   (:scenario-pass-count outcome-summary-map)
+   (:scenario-fail-count outcome-summary-map)
+   (:step-pass-count outcome-summary-map)
+   (:step-fail-count outcome-summary-map)
+   (:step-untested-count outcome-summary-map)))
 
 (defn get-outcome-summary
   "Return a string representation of the outcome of running all of the features.
@@ -436,18 +443,19 @@
   0 scenarios passed, 1 failed, ??? skipped, ??? untested
   0 steps passed, 4 failed, ??? skipped, ??? undefined, ??? untested
   "
-  [executions]
+  [executions & {:keys [as-data?] :or {as-data? false}}]
   (->> executions
        executions->outcome-map
        outcome-map->outcome-summary-map
-       format-outcome-summary-map))
+       ((fn [i]
+         (if as-data? i (format-outcome-summary-map i))))))
 
 (defn run
   "Run seq of features matching tags using the step functions defined in
   step-registry"
   [features step-registry {:keys [tags stop] :or {tags {} stop false}}
    & {:keys [initial-ctx] :or {initial-ctx {}}}]
-  (let [outcome (err->> features
+  (let [outcome (u/err->> features
                         (partial get-features-to-run tags)
                         (partial add-step-fns step-registry)
                         (partial execute initial-ctx stop))]

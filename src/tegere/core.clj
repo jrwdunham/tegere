@@ -10,7 +10,6 @@
 
 (defn main
   [args]
-  (println "TeGere!")
   (let [cli-args (simple-cli-parser args)
         config {:tags (select-keys (:kwargs cli-args) [:and-tags :or-tags])
                 :stop (get-in cli-args [:kwargs :stop] false)}
@@ -29,4 +28,4 @@
       $ lein run --tags=monkey --stop
   "
   [& args]
-  (println (main args)))
+  (main args))

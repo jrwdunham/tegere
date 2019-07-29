@@ -72,21 +72,29 @@
     (= :fail (:type err)) (print-step-fail step err start-time end-time)
     :else (println (format-step-passed step start-time end-time))))
 
-(defn get-feature-scenario-repr
-  [feature scenario]
-  (format "\n%s%s %s\n  %s\n\n%s  %s %s"
+(defn get-feature-repr
+  [feature]
+  (format "\n%s%s %s\n  %s\n"
           (if (:tags feature)
             (tegansi/style (str "@" (s/join " @" (:tags feature)) "\n") :cyan)
             "")
           (tegansi/style "Feature:" :magenta)
           (:name feature)
-          (:description feature)
+          (:description feature)))
+
+(defn print-feature
+  [feature]
+  (println (get-feature-repr feature)))
+
+(defn get-scenario-repr
+  [scenario]
+  (format "\n%s  %s %s"
           (if (:tags scenario)
             (tegansi/style (str "  @" (s/join " @" (:tags scenario)) "\n") :cyan)
             "")
           (tegansi/style "Scenario:" :magenta)
           (:description scenario)))
 
-(defn print-feature-scenario
-  [feature scenario]
-  (println (get-feature-scenario-repr feature scenario)))
+(defn print-scenario
+  [scenario]
+  (println (get-scenario-repr scenario)))
