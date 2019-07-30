@@ -92,6 +92,10 @@
   (get-scen-description scenario-tree
                         :SCENARIO_OUTLINE_LINE :SCENARIO_OUTLINE_TEXT))
 
+(defn step-str->kw
+  [step-str]
+  (-> step-str s/lower-case keyword))
+
 (defn get-step-type
   [step-tree]
   (let [tmp
@@ -99,8 +103,8 @@
              (get-first-branch-matching-root-label :STEP_LABEL)
              second
              second)]
-    (if (vector? tmp)
-      (second tmp) tmp)))
+    (-> (if (vector? tmp) (second tmp) tmp)
+        step-str->kw)))
 
 (defn get-step-text
   [step-tree]
@@ -202,6 +206,25 @@
      (fn [table-row] (interpolate so-steps table-row))
      examples-table)))
 
+(defn repair-conj-steps
+  "Repair any defective (:and and :but) :type values in steps by replacing the
+  defective value with the last non-defective one. Recursive because
+  (map repair (cons nil steps) steps) fails when two or more 'conj' steps are
+  adjacent."
+  ([steps] (repair-conj-steps steps nil))
+  ([[first-step & rest-steps] prev-step-type]
+   (let [first-step-type (:type first-step)
+         first-step
+         (if (some #{first-step-type} [:and :but])
+           (-> first-step
+               (assoc :type prev-step-type)
+               (assoc :original-type first-step-type))
+           ;; (assoc first-step :type prev-step-type)
+           first-step)]
+     (if rest-steps
+       (cons first-step (repair-conj-steps rest-steps (:type first-step)))
+       (list first-step)))))
+
 (defmulti process-scenario (fn [st] (first st)))
 
 ; Process a scenario outline tree (vector), returning a seq of maps,
@@ -217,14 +240,16 @@
      (fn [steps]
        {:description description
         :tags tags
-        :steps steps})
+        :steps (repair-conj-steps steps)})
      steps-sets)))
 
 (defmethod process-scenario :SCENARIO
   [scenario-tree]
   [{:description (get-scenario-description scenario-tree)
     :tags (get-scenario-tags scenario-tree)
-    :steps (get-scenario-steps scenario-tree)}])
+    :steps (-> scenario-tree
+               get-scenario-steps
+               repair-conj-steps)}])
 
 (defn extract-scenarios
   [feature-tree]
@@ -245,4 +270,3 @@
         scenarios (extract-scenarios feature-tree)]
     (merge feature-block-map
            {:scenarios scenarios})))
-

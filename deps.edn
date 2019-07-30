@@ -1,0 +1,15 @@
+{:aliases
+ {:test
+  {:extra-paths ["test" "resources"]
+   :extra-deps
+   {com.cognitect/test-runner
+    {:git/url "https://github.com/cognitect-labs/test-runner"
+     :sha "76568540e7f40268ad2b646110f237a60295fa3c"}}
+   :main-opts ["-m" "cognitect.test-runner" "-d" "test"]}
+  :run {:main-opts ["-m" "tegere.core"]}}
+ :deps
+ {org.clojure/clojure {:mvn/version "1.9.0"}
+  org.clojure/tools.namespace {:mvn/version "0.2.11"}
+  com.cemerick/pomegranate {:mvn/version "1.1.0"}
+  me.raynes/fs {:mvn/version "1.4.6"}
+  instaparse {:mvn/version "1.4.10"}}}
