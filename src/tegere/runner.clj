@@ -439,9 +439,9 @@
   "Return a string representation of the outcome of running all of the features.
   Something like:
 
-  0 features passed, 1 failed, ??? skipped, ??? untested
-  0 scenarios passed, 1 failed, ??? skipped, ??? untested
-  0 steps passed, 4 failed, ??? skipped, ??? undefined, ??? untested
+  0 features passed, 1 failed
+  0 scenarios passed, 1 failed
+  0 steps passed, 4 failed, 1 untested
   "
   [executions & {:keys [as-data?] :or {as-data? false}}]
   (->> executions
@@ -455,9 +455,12 @@
   step-registry"
   [features step-registry {:keys [tags stop] :or {tags {} stop false}}
    & {:keys [initial-ctx] :or {initial-ctx {}}}]
-  (let [outcome (u/err->> features
-                        (partial get-features-to-run tags)
-                        (partial add-step-fns step-registry)
-                        (partial execute initial-ctx stop))]
-    (println (get-outcome-summary outcome))
-    outcome))
+  (let [[outcome err] (u/err->> features
+                                (partial get-features-to-run tags)
+                                (partial add-step-fns step-registry)
+                                (partial execute initial-ctx stop))]
+    (if err
+      (do (println err)
+          err)
+      (do (println (get-outcome-summary outcome))
+          outcome))))
