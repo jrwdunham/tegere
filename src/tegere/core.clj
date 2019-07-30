@@ -18,14 +18,16 @@
     (load-clojure-source-files-under-path target-path)
     (run features @tegsteps/registry config)))
 
+(def ignore (constantly nil))
+
 (defn -main
   "Usage:
 
-      $ lein run [& args]
+      $ clj -A:run [& args]
 
   E.g.:
 
-      $ lein run --tags=monkey --stop
+      $ clj -A:run --tags=monkey --stop
   "
   [& args]
-  (main args))
+  (-> args main ignore))

@@ -667,6 +667,14 @@
     {:description "B"
      :tags (list "b")}}])
 
+(defmacro ignore-out-err
+  "Evaluates exprs in a context in which *out* and *err* ire bound to a fresh
+  StringWriter. Effectively suppresses writes to stdout and stderr."
+  [& body]
+  `(let [s# (new java.io.StringWriter)]
+     (binding [*out* s# *err* s#]
+       ~@body)))
+
 (t/deftest all-tags-filtering-test
   (t/testing "All/and tag filters work"
     (let [features [(parse monkey-feature)]
@@ -750,7 +758,7 @@
 (t/deftest can-run-simple-feature-test
   (t/testing "We can run a simple feature"
     (let [features [(parse monkey-feature)]
-          execution (sut/run features fake-registry {})
+          execution (ignore-out-err (sut/run features fake-registry {}))
           exec-steps (->> execution (map :steps) flatten)
           exec-step-count (count exec-steps)
           success-exec-steps (filter
@@ -797,7 +805,7 @@
   (t/testing "We can run a simple feature against a steps registry with steps
              that take parameters"
     (let [features [(parse monkey-feature)]
-          execution (sut/run features fake-registry-error {})
+          execution (ignore-out-err (sut/run features fake-registry-error {}))
           exec-steps (->> execution (map :steps) flatten)
           exec-step-count (count exec-steps)
           success-exec-steps (filter
@@ -827,7 +835,8 @@
   (t/testing "The :stop true flag tells the test runner to stop running
              scenarios after the first one fails."
     (let [features [(parse monkey-feature)]
-          execution (sut/run features fake-registry-error {:stop true})
+          execution
+          (ignore-out-err (sut/run features fake-registry-error {:stop true}))
           exec-steps (->> execution (map :steps) flatten)
           exec-step-count (count exec-steps)
           success-exec-steps (filter

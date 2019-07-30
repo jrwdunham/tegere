@@ -293,9 +293,11 @@
   execution of subsequent steps after the first failure; if false, we run all
   step sets, ignoring previous failures."
   [initial-ctx stop features]
-  (->> features
-       get-steps-map-seq
-       ((partial execute-steps-map-seq initial-ctx {:stop stop}))))
+  [(->> features
+        get-steps-map-seq
+        (filter #(-> % :steps some?))
+        ((partial execute-steps-map-seq initial-ctx {:stop stop})))
+   nil])
 
 (defn analyze-step-execution
   "Given a step execution map, return a reduced map containing the original
