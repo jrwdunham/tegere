@@ -30,6 +30,29 @@ Alternatively, build a JAR and run it against examples/::
     $ lein uberjar
     $ java -jar target/uberjar/tegere-0.1.0-SNAPSHOT-standalone.jar examples/
 
+Example usage in a Clojure project:
+
+.. code-block:: clojure
+
+       (ns example.core
+         (:require [tegere.cli :as tegcli]
+                   [tegere.loader :as tegload]
+                   [tegere.runner :as tegrun]
+                   [tegere.steps :as tegstep]
+                   [example.steps.core]))  ;; should register step functions
+
+       (defn main
+         [args]
+         (let [cli-args (tegcli/simple-cli-parser args)
+               config {:tags (select-keys (:kwargs cli-args) [:and-tags :or-tags])
+                       :stop (get-in cli-args [:kwargs :stop] false)}
+               features (tegload/load-feature-files (-> cli-args :args first))]
+           (tegrun/run features @tegstep/registry config)))
+
+       (defn -main
+         [& args]
+         (println (main args)))
+
 
 Run the Tests
 ================================================================================
