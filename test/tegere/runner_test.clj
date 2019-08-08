@@ -26,7 +26,7 @@
    "   \n"
    "  Examples: monkey characteristics:\n"
    "  | fruit  | response  | manner_of_looking  |\n"
-   "  | banana | happy     | quizically         |\n"
+   "  | banana | happy     | quizzically         |\n"
    "  | pear   | sad       | loathingly         |\n"
    "   \n"
    "  # This is a comment about this scenario outline...\n"
@@ -65,8 +65,8 @@
           "he is sad" (fn [context] (update-step-rets context :is-sad))
           "he looks at me loathingly"
           (fn [context] (update-step-rets context :looks-loathingly))
-          "he looks at me quizically"
-          (fn [context] (update-step-rets context :looks-quizically))}})
+          "he looks at me quizzically"
+          (fn [context] (update-step-rets context :looks-quizzically))}})
 
 ;; This fake registry has a step function that takes parameters
 (def fake-registry-params
@@ -191,7 +191,7 @@
       :fn nil
       :execution nil}
      {:type :then
-      :text "he looks at me quizically"
+      :text "he looks at me quizzically"
       :original-type :and
       :fn nil
       :execution nil}]
@@ -359,7 +359,7 @@
       :fn nil
       :execution nil}
      {:type :then
-      :text "he looks at me quizically"
+      :text "he looks at me quizzically"
       :original-type :and
       :fn nil
       :execution nil}]
@@ -497,7 +497,7 @@
       :fn nil
       :execution nil}
      {:type :then
-      :text "he looks at me quizically"
+      :text "he looks at me quizzically"
       :original-type :and
       :fn nil
       :execution nil}]
@@ -600,7 +600,7 @@
       :fn nil
       :execution nil}
      {:type :then
-      :text "he looks at me quizically"
+      :text "he looks at me quizzically"
       :original-type :and
       :fn nil
       :execution nil}]
@@ -779,7 +779,7 @@
         ;; The contexts at the end of execution of each scenario shoulld reflect
         ;; the meaning of the scenario (because the fake registry is defined that
         ;; way.)
-        (t/is (= [[:a-monkey :give-banana :is-happy :not-eat :looks-quizically]
+        (t/is (= [[:a-monkey :give-banana :is-happy :not-eat :looks-quizzically]
                   [:a-monkey :give-pear :is-sad :not-eat :looks-loathingly]
                   [:a-monkey :present-with-orang :is-happy]]
                  [(nth exec-step-rets 4) (nth exec-step-rets 9)

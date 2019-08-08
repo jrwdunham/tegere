@@ -16,7 +16,7 @@ Feature: Monkeys behave as expected
    
   Examples: monkey characteristics:
   | fruit  | response  | manner_of_looking  |
-  | banana | happy     | quizically         |
+  | banana | happy     | quizzically         |
   | pear   | sad       | loathingly         |
    
   # This is a comment about this scenario outline...

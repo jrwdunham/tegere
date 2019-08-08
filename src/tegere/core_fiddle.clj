@@ -26,7 +26,7 @@
 
   (step-prsr " But he doesn't eat it\n")
 
-  (step-prsr " And he looks at me quizically\n")
+  (step-prsr " And he looks at me quizzically\n")
 
   (step-block-prsr
    (str
@@ -34,7 +34,7 @@
     " When I give him a banana\n"
     " Then he is happy\n"
     " But he doesn't eat it\n"
-    " And he looks at me quizically\n"
+    " And he looks at me quizzically\n"
     ))
 
   (scenario-line-prsr
@@ -58,7 +58,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     ))
 
   (scenario-prsr
@@ -69,7 +69,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     ))
 
   (scenario-outline-prsr
@@ -80,7 +80,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     "   \n"
     "  Examples: monkey characteristics:\n"
     "  | h1  | h2  | h3  |\n"
@@ -157,7 +157,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     "   \n"
     "  Examples: monkey characteristics:\n"
     "  | h1  | h2  | h3  |\n"
@@ -170,7 +170,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     ))
 
   (feature-prsr
@@ -190,7 +190,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     "   \n"
     "   \n"
     "  Examples: monkey characteristics:\n"
@@ -206,7 +206,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     "\n"
     "\n"
     ))

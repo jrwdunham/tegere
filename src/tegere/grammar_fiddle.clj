@@ -1,6 +1,7 @@
 (ns tegere.grammar-fiddle
   "Fiddle file for playing around with grammar.clj."
-  (:require [tegere.grammar :refer :all]))
+  (:require [clojure.string :as string]
+            [tegere.grammar :refer :all]))
 
 
 (def monkey-feature
@@ -25,7 +26,7 @@
    "   \n"
    "  Examples: monkey characteristics:\n"
    "  | fruit  | response  | manner_of_looking  |\n"
-   "  | banana | happy     | quizically         |\n"
+   "  | banana | happy     | quizzically        |\n"
    "  | pear   | sad       | loathingly         |\n"
    "   \n"
    "  # This is a comment about this scenario outline...\n"
@@ -46,6 +47,8 @@
 
   (step-label-prsr "Then")
 
+  (step-label-prsr "But")
+
   (step-prsr " Given a monkey\n")
 
   (step-prsr " When I give him a banana\n")
@@ -54,7 +57,7 @@
 
   (step-prsr " But he doesn't eat it\n")
 
-  (step-prsr " And he looks at me quizically\n")
+  (step-prsr " And he looks at me quizzically\n")
 
   (step-block-prsr
    (str
@@ -62,8 +65,26 @@
     " When I give him a banana\n"
     " Then he is happy\n"
     " But he doesn't eat it\n"
-    " And he looks at me quizically\n"
+    " And he looks at me quizzically\n"
     ))
+
+  ;; comments work inside step blocks and scenario outline step blocks:
+  (step-block-prsr
+   (str
+    " Given a monkey\n"
+    " #When I give him a banana\n"
+    " # Then he is happy\n"
+    "    #But he doesn't eat it\n"
+    "    #    And he looks at me quizzically\n"))
+
+  ;; comments work inside step blocks and scenario outline step blocks:
+  (so-step-block-prsr
+   (str
+    " Given a monkey\n"
+    " #When I give him a banana\n"
+    " Then he is happy\n"
+    " But he doesn't eat it\n"
+    " And he looks at me quizzically\n"))
 
   (scenario-line-prsr
    " Scenario: Monkeys are cautious when offered food.\n")
@@ -86,7 +107,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     ))
 
   (scenario-prsr
@@ -97,7 +118,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     ))
 
   (scenario-outline-prsr
@@ -108,7 +129,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     "   \n"
     "  Examples: monkey characteristics:\n"
     "  | h1  | h2  | h3  |\n"
@@ -185,7 +206,7 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     "   \n"
     "  Examples: monkey characteristics:\n"
     "  | h1  | h2  | h3  |\n"
@@ -198,10 +219,13 @@
     "    When I give him a banana\n"
     "    Then he is happy\n"
     "    But he doesn't eat it\n"
-    "    And he looks at me quizically\n"
+    "    And he looks at me quizzically\n"
     ))
 
   (feature-prsr monkey-feature)
+
+  ;; Show that we can parse feature files that do not end with a newline.
+  (feature-prsr (string/trim monkey-feature))
 
   (let [real-feature
         (slurp (.getPath (clojure.java.io/resource "sample.feature")))]

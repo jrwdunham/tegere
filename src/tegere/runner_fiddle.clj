@@ -26,8 +26,8 @@
           "he is sad" (fn [context] (update-step-rets context :is-sad))
           "he looks at me loathingly"
           (fn [context] (update-step-rets context :looks-loathingly))
-          "he looks at me quizically"
-          (fn [context] (update-step-rets context :looks-quizically))}})
+          "he looks at me quizzically"
+          (fn [context] (update-step-rets context :looks-quizzically))}})
 
 (defn for-repl
   "Call this in a REPL to see how printing to stdout works."
@@ -48,8 +48,8 @@
                 "he is sad" (fn [context] (update-step-rets context :is-sad))
                 "he looks at me loathingly"
                 (fn [context] (update-step-rets context :looks-loathingly))
-                "he looks at me quizically"
-                (fn [context] (update-step-rets context :looks-quizically))}}]
+                "he looks at me quizzically"
+                (fn [context] (update-step-rets context :looks-quizzically))}}]
     (run features fake-registry config)))
 
 ;; Fake seq of scenario executions
@@ -152,7 +152,7 @@
       :fn nil
       :execution nil}
      {:type :then
-      :text "he looks at me quizically"
+      :text "he looks at me quizzically"
       :original-type :and
       :fn nil
       :execution nil}]
@@ -320,7 +320,7 @@
       :fn nil
       :execution nil}
      {:type :then
-      :text "he looks at me quizically"
+      :text "he looks at me quizzically"
       :original-type :and
       :fn nil
       :execution nil}]
@@ -457,7 +457,7 @@
       :fn nil
       :execution nil}
      {:type :then
-      :text "he looks at me quizically"
+      :text "he looks at me quizzically"
       :original-type :and
       :fn nil
       :execution nil}]
@@ -560,7 +560,7 @@
       :fn nil
       :execution nil}
      {:type :then
-      :text "he looks at me quizically"
+      :text "he looks at me quizzically"
       :original-type :and
       :fn nil
       :execution nil}]
@@ -867,8 +867,8 @@
                 "he is sad" (fn [context] (update-step-rets context :is-sad))
                 "he looks at me loathingly"
                 (fn [context] (update-step-rets context :looks-loathingly))
-                "he looks at me quizically"
-                (fn [context] (update-step-rets context :looks-quizically))}}]
+                "he looks at me quizzically"
+                (fn [context] (update-step-rets context :looks-quizzically))}}]
     (run features fake-registry config))
 
   (let [features [(parse monkey-feature) (parse monkey-feature)]
@@ -885,8 +885,8 @@
                 "he is sad" (fn [context] (update-step-rets context :is-sad))
                 "he looks at me loathingly"
                 (fn [context] (update-step-rets context :looks-loathingly))
-                "he looks at me quizically"
-                (fn [context] (update-step-rets context :looks-quizically))}}]
+                "he looks at me quizzically"
+                (fn [context] (update-step-rets context :looks-quizzically))}}]
     (run features fake-registry config))
 
   (get-step-fn-args

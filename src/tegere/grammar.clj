@@ -4,7 +4,30 @@
   instaparse.core/parser in order to build a parser that parses a feature
   file (a string of text) into structured data, viz. a vector-based tree
   structure."
-  (:require [instaparse.core :as insta]))
+  (:require [clojure.string :as string]
+            [instaparse.core :as insta]))
+
+(def indent-grmr "INDENT = ' '*\n")
+
+(def new-line-grmr "NEW_LINE = '\\n'\n")
+
+(def empty-line-grmr "EMPTY_LINE = #'\\s*\\n'\n")
+
+(def comment-line-grmr
+  (str
+   "COMMENT_LINE = INDENT* COMMENT_SENTINEL+ COMMENT_TEXT* NEW_LINE\n"
+   "COMMENT_SENTINEL = '#'\n"
+   indent-grmr
+   "COMMENT_TEXT = #'[^\\n]+'\n"
+   new-line-grmr))
+
+(def comment-line-prsr (insta/parser comment-line-grmr))
+
+(def ignored-line-grmr
+  (str
+   "IGNORED_LINE = EMPTY_LINE | COMMENT_LINE\n"
+   empty-line-grmr
+   comment-line-grmr))
 
 (def step-label-grmr
   (str
@@ -17,10 +40,6 @@
    "BUT_LABEL = 'But'\n"))
 
 (def step-label-prsr (insta/parser step-label-grmr))
-
-(def indent-grmr "INDENT = ' '*\n")
-
-(def new-line-grmr "NEW_LINE = '\\n'\n")
 
 (def step-grmr
   (str
@@ -51,15 +70,17 @@
 
 (def step-block-grmr
   (str
-   "STEP_BLOCK = STEP+\n"
-   step-grmr))
+   "STEP_BLOCK = STEP (STEP | IGNORED_LINE)*\n"
+   step-grmr
+   ignored-line-grmr))
 
 (def step-block-prsr (insta/parser step-block-grmr))
 
 (def so-step-block-grmr
   (str
-   "SO_STEP_BLOCK = SO_STEP+\n"
-   so-step-grmr))
+   "SO_STEP_BLOCK = SO_STEP (SO_STEP | IGNORED_LINE)*\n"
+   so-step-grmr
+   ignored-line-grmr))
 
 (def so-step-block-prsr (insta/parser so-step-block-grmr))
 
@@ -152,24 +173,6 @@
 
 (def scenario-prsr (insta/parser scenario-grmr))
 
-(def empty-line-grmr "EMPTY_LINE = #'\\s*\\n'\n")
-
-(def comment-line-grmr
-  (str
-   "COMMENT_LINE = INDENT* COMMENT_SENTINEL+ COMMENT_TEXT* NEW_LINE\n"
-   "COMMENT_SENTINEL = '#'\n"
-   indent-grmr
-   "COMMENT_TEXT = #'[^\\n]+'\n"
-   new-line-grmr))
-
-(def comment-line-prsr (insta/parser comment-line-grmr))
-
-(def ignored-line-grmr
-  (str
-   "IGNORED_LINE = EMPTY_LINE | COMMENT_LINE\n"
-   empty-line-grmr
-   comment-line-grmr))
-
 (def scenario-outline-grmr
   (str
    "SCENARIO_OUTLINE = TAG_LINE? SCENARIO_OUTLINE_LINE SO_STEP_BLOCK EMPTY_LINE* EXAMPLES\n"
@@ -222,4 +225,11 @@
    scenario-grmr
    scenario-outline-grmr))
 
-(def feature-prsr (insta/parser feature-grmr))
+(def -feature-prsr (insta/parser feature-grmr))
+
+(defn feature-prsr
+  "Parses a Gherkin feature file string into a Hiccup data format. Cheats a
+  little by suffixing a newline if one is not present."
+  [input]
+  (let [input (if (string/ends-with? input "\n") input (str input "\n"))]
+    (-feature-prsr input)))
