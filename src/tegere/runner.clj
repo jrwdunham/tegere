@@ -97,16 +97,21 @@
   "Get the step function in step-registry that matches step. If the function
   takes arguments from the step text, we still return a unary function over
   contexts, but it is a closure that receives the required string arguments
-  from the matching step text."
+  from the matching step text. If there are multiple matches, return the one with
+  the longest step function text---a simple heuristic for the most specific
+  match."
   [step-registry {step-type :type step-text :text}]
   (->> step-registry
        step-type
        (map (fn [[step-fn-text step-fn]]
               (let [step-fn-args (get-step-fn-args step-fn-text step-text)]
                 (when step-fn-args
-                  (fn [ctx] (apply (partial step-fn ctx) step-fn-args))))))
+                  [(count step-fn-text)
+                   (fn [ctx] (apply (partial step-fn ctx) step-fn-args))]))))
        (filter some?)
-       first))
+       sort
+       last
+       last))
 
 (defn add-step-fns-to-scenario
   "Assign a step function, from step-registry, to each step map (under its :fn
