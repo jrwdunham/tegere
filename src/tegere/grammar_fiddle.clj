@@ -1,7 +1,8 @@
 (ns tegere.grammar-fiddle
   "Fiddle file for playing around with grammar.clj."
   (:require [clojure.string :as string]
-            [tegere.grammar :refer :all]))
+            [tegere.grammar :refer :all]
+            [instaparse.core :as insta]))
 
 
 (def monkey-feature
@@ -257,6 +258,5 @@
     "When experimenter approaches <adverb>\n"))
 
   feature-grmr
-
 
 )
