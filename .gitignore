@@ -14,3 +14,4 @@ private/
 secrets/
 .nrepl-history
 .cpcache/
+.clj-kondo/
