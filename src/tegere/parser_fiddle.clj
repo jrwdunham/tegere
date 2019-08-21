@@ -1,8 +1,6 @@
 (ns tegere.parser-fiddle
   "Fiddle file for playing around with parser.clj."
-  (:require [clojure.string :as s]
-            [tegere.parser :refer :all]))
-
+  (:require [tegere.parser :refer [parse]]))
 
 (comment
 

@@ -2,7 +2,6 @@
   "Defines run, which runs a seq of features that match a supplied tags map,
   using the step functions defined in a supplied step-registry"
   (:require [clojure.string :as s]
-            [clojure.pprint :as pprint]
             [clojure.set :refer [intersection]]
             [tegere.utils :as u]
             [tegere.print :as tegprn]))
@@ -85,7 +84,6 @@
   'I ate a pear'       'I ate a banana' => nil"
   [step-fn-text step-text]
   (let [var-name-regex #"\{[-\w]+\}"
-        step-fn-vars (re-seq var-name-regex step-fn-text)
         step-fn-regex
         (-> step-fn-text (s/replace var-name-regex "(.+)") re-pattern)
         matches (re-find step-fn-regex step-text)]
@@ -179,12 +177,12 @@
        is-executable?))
 
 (defn handle-step-fail
-  [step e]
+  [_ e]
   (let [exc (.getMessage e)]
     [nil {:type :fail :message exc}]))
 
 (defn handle-step-error
-  [step e]
+  [_ e]
   (let [exc (.getMessage e)
         stack-trace (map str (.getStackTrace e))]
     [nil {:type :error :message exc :stack-trace stack-trace}]))
@@ -374,7 +372,7 @@
   "
   [outcome-map]
   (reduce
-   (fn [agg [feature scenarios]]
+   (fn [agg [_ scenarios]]
      (let [steps-stats
            (->> scenarios vals (apply merge-with +))
            scenarios-stats

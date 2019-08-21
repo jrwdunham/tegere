@@ -6,7 +6,7 @@
             [me.raynes.fs :as fs]
             [tegere.parser :refer [parse]])
   (:import java.io.File)
-  (:use [clojure.java.io :only (as-url)]))
+  )
 
 (defn add-to-system-classpath
   "Add a path (string) to the system class loader. See
@@ -16,7 +16,7 @@
   (let [field (aget (.getDeclaredFields java.net.URLClassLoader) 0)]
     (.setAccessible field true)
     (let [ucp (.get field (ClassLoader/getSystemClassLoader))]
-      (.addURL ucp (as-url (File. dir-path))))))
+      (.addURL ucp (io/as-url (File. dir-path))))))
 
 (defn find-clojure-sources-in-dir
   "Return a seq of Clojure source files under dir-path or nil if there are none.
@@ -98,7 +98,7 @@
   extensions."
   [root-path extensions]
   (->> root-path
-       clojure.java.io/file
+       io/file
        file-seq
        (filter #(.isFile %))
        (map #(.toPath %))

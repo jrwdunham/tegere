@@ -1,6 +1,5 @@
 (ns tegere.cli-fiddle
-  (:require [tegere.cli :refer :all]
-            [clojure.string :as s]))
+  (:require [tegere.cli :refer [simple-cli-parser parse-arg]]))
 
 (comment
 

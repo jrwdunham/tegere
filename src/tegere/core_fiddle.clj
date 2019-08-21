@@ -1,6 +1,7 @@
 (ns tegere.core-fiddle
   "Fiddle file for playing around with core.clj."
-  (:require [tegere.core :refer :all]))
+  (:require [tegere.core :refer [main]]
+            [tegere.grammar :as gr]))
 
 (comment
 
@@ -12,23 +13,23 @@
 
   ((comp #(* % 8) inc) 1)
 
-  (step-label-prsr "Given")
+  (gr/step-label-prsr "Given")
 
-  (step-label-prsr "When")
+  (gr/step-label-prsr "When")
 
-  (step-label-prsr "Then")
+  (gr/step-label-prsr "Then")
 
-  (step-prsr " Given a monkey\n")
+  (gr/step-prsr " Given a monkey\n")
 
-  (step-prsr " When I give him a banana\n")
+  (gr/step-prsr " When I give him a banana\n")
 
-  (step-prsr " Then he is happy\n")
+  (gr/step-prsr " Then he is happy\n")
 
-  (step-prsr " But he doesn't eat it\n")
+  (gr/step-prsr " But he doesn't eat it\n")
 
-  (step-prsr " And he looks at me quizzically\n")
+  (gr/step-prsr " And he looks at me quizzically\n")
 
-  (step-block-prsr
+  (gr/step-block-prsr
    (str
     " Given a monkey\n"
     " When I give him a banana\n"
@@ -37,21 +38,21 @@
     " And he looks at me quizzically\n"
     ))
 
-  (scenario-line-prsr
+  (gr/scenario-line-prsr
    " Scenario: Monkeys are cautious when offered food.\n")
 
-  (scenario-outline-line-prsr
+  (gr/scenario-outline-line-prsr
    " Scenario Outline: Monkeys are cautious when offered food.\n")
 
-  (tag-prsr "@ab-c_d")
+  (gr/tag-prsr "@ab-c_d")
 
-  (tag-set-prsr "@ab-c_d")
+  (gr/tag-set-prsr "@ab-c_d")
 
-  (tag-set-prsr "@ab-c_d @dog @cat")
+  (gr/tag-set-prsr "@ab-c_d @dog @cat")
 
-  (tag-line-prsr "  @ab-c_d @dog @cat\n")
+  (gr/tag-line-prsr "  @ab-c_d @dog @cat\n")
 
-  (scenario-prsr
+  (gr/scenario-prsr
    (str
     "  Scenario: Monkeys are cautious when offered food.\n"
     "    Given a monkey\n"
@@ -61,7 +62,7 @@
     "    And he looks at me quizzically\n"
     ))
 
-  (scenario-prsr
+  (gr/scenario-prsr
    (str
     "  @monkeys @caution-tests\n"
     "  Scenario: Monkeys are cautious when offered food.\n"
@@ -72,7 +73,7 @@
     "    And he looks at me quizzically\n"
     ))
 
-  (scenario-outline-prsr
+  (gr/scenario-outline-prsr
    (str
     "  @monkeys @caution-tests\n"
     "  Scenario Outline: Monkeys are cautious when offered food.\n"
@@ -88,18 +89,18 @@
     "  | d11 | d21 | d31 |\n"
     ))
 
-  (examples-line-prsr " Examples: monkey characteristics:\n")
+  (gr/examples-line-prsr " Examples: monkey characteristics:\n")
 
-  (table-row-prsr " | a | b | c |\n")
+  (gr/table-row-prsr " | a | b | c |\n")
 
-  (table-prsr
+  (gr/table-prsr
    (str
     " | h1  | h2  | h3  |\n"
     " | d10 | d20 | d30 |\n"
     " | d11 | d21 | d31 |\n"
     ))
 
-  (examples-prsr
+  (gr/examples-prsr
    (str
     " Examples: monkey characteristics:\n"
     " | h1  | h2  | h3  |\n"
@@ -107,14 +108,14 @@
     " | d11 | d21 | d31 |\n"
     ))
 
-  (feature-line-prsr "Feature: Monkeys behave as expected\n")
+  (gr/feature-line-prsr "Feature: Monkeys behave as expected\n")
 
-  (feature-description-block-prsr
+  (gr/feature-description-block-prsr
    (str
     " And my feature is so cool\n"
     " because blah blah blah\n"))
 
-  (feature-block-prsr
+  (gr/feature-block-prsr
    (str
     "@monkeys\n"
     "Feature: Monkeys behave as expected\n"
@@ -123,7 +124,7 @@
     )
    )
 
-  (feature-block-prsr
+  (gr/feature-block-prsr
    (str
     "Feature: Monkeys behave as expected\n"
     " And my feature is so cool\n"
@@ -131,20 +132,20 @@
     )
    )
 
-  (feature-block-prsr
+  (gr/feature-block-prsr
    (str
     "Feature: Monkeys behave as expected\n"
     " And my feature is so cool\n"
     )
    )
 
-  (feature-block-prsr
+  (gr/feature-block-prsr
    (str
     "Feature: Monkeys behave as expected\n"
     )
    )
 
-  (feature-prsr
+  (gr/feature-prsr
    (str
     "@monkeys\n"
     "Feature: Monkeys behave as expected\n"
@@ -173,7 +174,7 @@
     "    And he looks at me quizzically\n"
     ))
 
-  (feature-prsr
+  (gr/feature-prsr
    (str
     "# This is a comment about this feature\n"
     "\n"
@@ -213,15 +214,14 @@
 
   (let [real-feature
         (slurp (.getPath (clojure.java.io/resource "sample.feature")))]
-    (feature-prsr real-feature))
+    (gr/feature-prsr real-feature))
 
   (let [real-feature
         (slurp (.getPath (clojure.java.io/resource "sample.feature")))
-        parse (feature-prsr real-feature)
-        [root-label & nodes] parse]
+        parse (gr/feature-prsr real-feature)
+        [_ & nodes] parse]
     (-> parse
-        count
-        )
+        count)
     (map #(if (keyword? %) % (first %)) parse)
 
     (map type parse)
@@ -229,9 +229,7 @@
     nodes
     (->> nodes
          (map first)
-         (filter (fn [x] (not= x :IGNORED_LINE)))
-         )
-    )
+         (filter (fn [x] (not= x :IGNORED_LINE)))))
 
   (set [1 2 1 2])
 

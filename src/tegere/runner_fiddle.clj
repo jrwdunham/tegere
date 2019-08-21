@@ -1,6 +1,6 @@
 (ns tegere.runner-fiddle
   "Fiddle file for playing around with runner.clj."
-  (:require [tegere.runner :refer :all]
+  (:require [tegere.runner :as r]
             [tegere.parser :refer [parse]]
             [tegere.grammar-fiddle :refer [monkey-feature]]))
 
@@ -42,15 +42,15 @@
                 "I give him a pear"
                 (fn [context] (update-step-rets context :give-pear))}
          :then {"he doesn't eat it"
-                (fn [context] (assert (= :not-eat true)
-                                      "He DOES eat it you fool!"))
+                (fn [_] (assert (= :not-eat true)
+                                "He DOES eat it you fool!"))
                 "he is happy" (fn [context] (update-step-rets context (/ 1 0)))
                 "he is sad" (fn [context] (update-step-rets context :is-sad))
                 "he looks at me loathingly"
                 (fn [context] (update-step-rets context :looks-loathingly))
                 "he looks at me quizzically"
                 (fn [context] (update-step-rets context :looks-quizzically))}}]
-    (run features fake-registry config)))
+    (r/run features fake-registry config)))
 
 ;; Fake seq of scenario executions
 (def fake-run-outcome
@@ -627,7 +627,6 @@
     {:description "B"
      :tags (list "b")}}])
 
-;; 
 (def minimal-run-outcome
   [{:steps  ;; pass, pass, error, untested, untested
     [{:execution {:err nil}}
@@ -639,7 +638,6 @@
     :scenario "s-a"}
    ])
 
-
 (comment
 
   ((juxt :feature :scenario :outcome) (first other-fake-run-outcome))
@@ -649,7 +647,7 @@
 
   (->> other-fake-run-outcome
        first
-       analyze-step-execution
+       r/analyze-step-execution
        ((juxt :feature :scenario :outcome)))
 
   ;; {{:name "the porkcase monkey integration liquidity endpoint works",
@@ -666,8 +664,8 @@
   ;;    :execution-fail-count 0}}}
 
   (->> other-fake-run-outcome
-       executions->outcome-map
-       outcome-map->outcome-summary-map
+       r/executions->outcome-map
+       r/outcome-map->outcome-summary-map
        )
 
   ;; Input:
@@ -692,8 +690,8 @@
   ;;  :scenarios {:passed 2, :failed 0},
   ;;  :steps {:passed 24, :failed 0, :untested 0}}
   (->> fake-run-outcome-3
-       executions->outcome-map
-       outcome-map->outcome-summary-map
+       r/executions->outcome-map
+       r/outcome-map->outcome-summary-map
        )
 
   (let [scenarios
@@ -795,21 +793,21 @@
            scenarios-stats
            feature-stats))
 
-  (executions->outcome-map other-fake-run-outcome)
+  (r/executions->outcome-map other-fake-run-outcome)
 
-  (analyze-step-execution (first other-fake-run-outcome))
+  (r/analyze-step-execution (first other-fake-run-outcome))
 
-  (executions->outcome-map fake-run-outcome)
+  (r/executions->outcome-map fake-run-outcome)
 
-  (analyze-step-execution (first fake-run-outcome))
+  (r/analyze-step-execution (first fake-run-outcome))
 
-  (analyze-step-execution (second fake-run-outcome))
+  (r/analyze-step-execution (second fake-run-outcome))
 
-  (analyze-step-execution (nth fake-run-outcome 2))
+  (r/analyze-step-execution (nth fake-run-outcome 2))
 
-  (analyze-step-execution (nth fake-run-outcome 3))
+  (r/analyze-step-execution (nth fake-run-outcome 3))
 
-  (get-outcome-summary minimal-run-outcome)
+  (r/get-outcome-summary minimal-run-outcome)
 
   (->
    [{:steps  ;; pass, pass, error, untested, untested
@@ -830,29 +828,25 @@
       {:execution {:err nil}}]
      :feature "f-b"
      :scenario "s-b"}]
-   (get-outcome-summary :as-data? false))
+   (r/get-outcome-summary :as-data? false))
 
-  (sort {:a 2 :b 3})
+  (r/get-outcome-summary fake-run-outcome)
 
-  (select-keys)
+  (r/get-outcome-summary other-fake-run-outcome)
 
-  (get-outcome-summary fake-run-outcome)
+  (r/get-outcome-summary fake-run-outcome-3)
 
-  (get-outcome-summary other-fake-run-outcome)
+  (r/get-step-fn-args "I ate a {fruit-type}" "I ate a banana")
 
-  (get-outcome-summary fake-run-outcome-3)
+  (r/get-step-fn-args "I ate a banana" "I ate a pear")
 
-  (get-step-fn-args "I ate a {fruit-type}" "I ate a banana")
+  (r/get-step-fn-args "I ate a pear" "I ate a pear")
 
-  (get-step-fn-args "I ate a banana" "I ate a pear")
+  ((r/get-step-fn fake-registry {:type :when :text "I give him a pear"}) {})
 
-  (get-step-fn-args "I ate a pear" "I ate a pear")
+  ((r/get-step-fn fake-registry {:type :when :text "I give him a banana"}) {})
 
-  ((get-step-fn fake-registry {:type :when :text "I give him a pear"}) {})
-
-  ((get-step-fn fake-registry {:type :when :text "I give him a banana"}) {})
-
-  ((get-step-fn fake-registry {:type :when :text "I give him a pear"}) {})
+  ((r/get-step-fn fake-registry {:type :when :text "I give him a pear"}) {})
 
   (let [features [(parse monkey-feature) (parse monkey-feature)]
         config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
@@ -869,7 +863,7 @@
                 (fn [context] (update-step-rets context :looks-loathingly))
                 "he looks at me quizzically"
                 (fn [context] (update-step-rets context :looks-quizzically))}}]
-    (run features fake-registry config))
+    (r/run features fake-registry config))
 
   (let [features [(parse monkey-feature) (parse monkey-feature)]
         config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
@@ -887,17 +881,17 @@
                 (fn [context] (update-step-rets context :looks-loathingly))
                 "he looks at me quizzically"
                 (fn [context] (update-step-rets context :looks-quizzically))}}]
-    (run features fake-registry config))
+    (r/run features fake-registry config))
 
-  (get-step-fn-args
+  (r/get-step-fn-args
    "I give {recipient} a {fruit}"
    "I give him a big ole banana")  ;; ("him" "big ole banana")
 
-  (get-step-fn-args
+  (r/get-step-fn-args
    "I gave {recipient} a {fruit}"
    "I give him a big ole banana")  ;; => nil
 
-  (get-step-fn-args
+  (r/get-step-fn-args
    "I give him a big ole banana"
    "I give him a big ole banana")  ;; => ()
 

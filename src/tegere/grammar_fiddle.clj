@@ -1,7 +1,7 @@
 (ns tegere.grammar-fiddle
   "Fiddle file for playing around with grammar.clj."
   (:require [clojure.string :as string]
-            [tegere.grammar :refer :all]))
+            [tegere.grammar :as gr]))
 
 
 (def monkey-feature
@@ -41,25 +41,25 @@
 
 (comment
 
-  (step-label-prsr "Given")
+  (gr/step-label-prsr "Given")
 
-  (step-label-prsr "When")
+  (gr/step-label-prsr "When")
 
-  (step-label-prsr "Then")
+  (gr/step-label-prsr "Then")
 
-  (step-label-prsr "But")
+  (gr/step-label-prsr "But")
 
-  (step-prsr " Given a monkey\n")
+  (gr/step-prsr " Given a monkey\n")
 
-  (step-prsr " When I give him a banana\n")
+  (gr/step-prsr " When I give him a banana\n")
 
-  (step-prsr " Then he is happy\n")
+  (gr/step-prsr " Then he is happy\n")
 
-  (step-prsr " But he doesn't eat it\n")
+  (gr/step-prsr " But he doesn't eat it\n")
 
-  (step-prsr " And he looks at me quizzically\n")
+  (gr/step-prsr " And he looks at me quizzically\n")
 
-  (step-block-prsr
+  (gr/step-block-prsr
    (str
     " Given a monkey\n"
     " When I give him a banana\n"
@@ -69,7 +69,7 @@
     ))
 
   ;; comments work inside step blocks and scenario outline step blocks:
-  (step-block-prsr
+  (gr/step-block-prsr
    (str
     " Given a monkey\n"
     " #When I give him a banana\n"
@@ -78,7 +78,7 @@
     "    #    And he looks at me quizzically\n"))
 
   ;; comments work inside step blocks and scenario outline step blocks:
-  (so-step-block-prsr
+  (gr/so-step-block-prsr
    (str
     " Given a monkey\n"
     " #When I give him a banana\n"
@@ -86,21 +86,21 @@
     " But he doesn't eat it\n"
     " And he looks at me quizzically\n"))
 
-  (scenario-line-prsr
+  (gr/scenario-line-prsr
    " Scenario: Monkeys are cautious when offered food.\n")
 
-  (scenario-outline-line-prsr
+  (gr/scenario-outline-line-prsr
    " Scenario Outline: Monkeys are cautious when offered food.\n")
 
-  (tag-prsr "@ab-c_d")
+  (gr/tag-prsr "@ab-c_d")
 
-  (tag-set-prsr "@ab-c_d")
+  (gr/tag-set-prsr "@ab-c_d")
 
-  (tag-set-prsr "@ab-c_d @dog @cat")
+  (gr/tag-set-prsr "@ab-c_d @dog @cat")
 
-  (tag-line-prsr "  @ab-c_d @dog @cat\n")
+  (gr/tag-line-prsr "  @ab-c_d @dog @cat\n")
 
-  (scenario-prsr
+  (gr/scenario-prsr
    (str
     "  Scenario: Monkeys are cautious when offered food.\n"
     "    Given a monkey\n"
@@ -110,7 +110,7 @@
     "    And he looks at me quizzically\n"
     ))
 
-  (scenario-prsr
+  (gr/scenario-prsr
    (str
     "  @monkeys @caution-tests\n"
     "  Scenario: Monkeys are cautious when offered food.\n"
@@ -121,7 +121,7 @@
     "    And he looks at me quizzically\n"
     ))
 
-  (scenario-outline-prsr
+  (gr/scenario-outline-prsr
    (str
     "  @monkeys @caution-tests\n"
     "  Scenario Outline: Monkeys are cautious when offered food.\n"
@@ -137,18 +137,18 @@
     "  | d11 | d21 | d31 |\n"
     ))
 
-  (examples-line-prsr " Examples: monkey characteristics:\n")
+  (gr/examples-line-prsr " Examples: monkey characteristics:\n")
 
-  (table-row-prsr " | a | b | c |\n")
+  (gr/table-row-prsr " | a | b | c |\n")
 
-  (table-prsr
+  (gr/table-prsr
    (str
     " | h1  | h2  | h3  |\n"
     " | d10 | d20 | d30 |\n"
     " | d11 | d21 | d31 |\n"
     ))
 
-  (examples-prsr
+  (gr/examples-prsr
    (str
     " Examples: monkey characteristics:\n"
     " | h1  | h2  | h3  |\n"
@@ -156,14 +156,14 @@
     " | d11 | d21 | d31 |\n"
     ))
 
-  (feature-line-prsr "Feature: Monkeys behave as expected\n")
+  (gr/feature-line-prsr "Feature: Monkeys behave as expected\n")
 
-  (feature-description-block-prsr
+  (gr/feature-description-block-prsr
    (str
     " And my feature is so cool\n"
     " because blah blah blah\n"))
 
-  (feature-block-prsr
+  (gr/feature-block-prsr
    (str
     "@monkeys\n"
     "Feature: Monkeys behave as expected\n"
@@ -172,7 +172,7 @@
     )
    )
 
-  (feature-block-prsr
+  (gr/feature-block-prsr
    (str
     "Feature: Monkeys behave as expected\n"
     " And my feature is so cool\n"
@@ -180,20 +180,20 @@
     )
    )
 
-  (feature-block-prsr
+  (gr/feature-block-prsr
    (str
     "Feature: Monkeys behave as expected\n"
     " And my feature is so cool\n"
     )
    )
 
-  (feature-block-prsr
+  (gr/feature-block-prsr
    (str
     "Feature: Monkeys behave as expected\n"
     )
    )
 
-  (feature-prsr
+  (gr/feature-prsr
    (str
     "@monkeys\n"
     "Feature: Monkeys behave as expected\n"
@@ -222,19 +222,19 @@
     "    And he looks at me quizzically\n"
     ))
 
-  (feature-prsr monkey-feature)
+  (gr/feature-prsr monkey-feature)
 
   ;; Show that we can parse feature files that do not end with a newline.
-  (feature-prsr (string/trim monkey-feature))
+  (gr/feature-prsr (string/trim monkey-feature))
 
   (let [real-feature
         (slurp (.getPath (clojure.java.io/resource "sample.feature")))]
-    (feature-prsr real-feature))
+    (gr/feature-prsr real-feature))
 
   (let [real-feature
         (slurp (.getPath (clojure.java.io/resource "sample.feature")))
-        parse (feature-prsr real-feature)
-        [root-label & nodes] parse]
+        parse (gr/feature-prsr real-feature)
+        [_ & nodes] parse]
     (-> parse
         count
         )
@@ -247,16 +247,16 @@
     parse
     )
 
-  (so-step-prsr "Given a <modifier> monkey\n")
+  (gr/so-step-prsr "Given a <modifier> monkey\n")
 
-  (so-step-prsr "Given a <modifier> monkey of <qualifier> character\n")
+  (gr/so-step-prsr "Given a <modifier> monkey of <qualifier> character\n")
 
-  (so-step-block-prsr
+  (gr/so-step-block-prsr
    (str
     "Given a <modifier> monkey of <qualifier> character\n"
     "When experimenter approaches <adverb>\n"))
 
-  feature-grmr
+  gr/feature-grmr
 
 
 )

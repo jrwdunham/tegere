@@ -57,7 +57,7 @@
    maps))
 
 (defn do-the-thing
-  [agg [feature scenarios]]
+  [agg [_ scenarios]]
   (let [steps
         (apply (partial merge-with + {:passed 0 :failed 0})
                (->> scenarios
@@ -71,7 +71,7 @@
                             {:passed 0 :failed 0}
                             scen-val)))))
         scenarios
-        (reduce (fn [agg [scen s-o]]
+        (reduce (fn [agg [_ s-o]]
                   (let [scen-failed
                         (->> s-o
                              ((juxt :error :fail))
