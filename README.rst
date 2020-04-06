@@ -9,6 +9,11 @@ Yes, I do know about `cucumber-jvm`_ and `cucumber-js`_. TeGere offers a
 Clojure-first Gherkin library and an opportunity to use Instaparse_ to create a
 useful DSL.
 
+    "Now, if you have one of these pretend testing systems that lets you write
+    English strings so that the customer can look at it, that's just silly."
+
+    -- Rich Hickey (Simple Made Easy talk)
+
 
 Usage
 ================================================================================
