@@ -10,6 +10,5 @@
  :deps
  {org.clojure/clojure {:mvn/version "1.9.0"}
   org.clojure/tools.namespace {:mvn/version "0.2.11"}
-  com.cemerick/pomegranate {:mvn/version "1.1.0"}
   me.raynes/fs {:mvn/version "1.4.6"}
   instaparse {:mvn/version "1.4.10"}}}
