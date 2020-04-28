@@ -28,4 +28,6 @@
 
   (test-load-clojure-source-files-under-path "examples/apes/src")
 
+  (l/load-feature-files "../../examples")
+
 )

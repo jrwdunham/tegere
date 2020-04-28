@@ -5,8 +5,7 @@
             [clojure.tools.namespace.find :as ctn-find]
             [me.raynes.fs :as fs]
             [tegere.parser :refer [parse]])
-  (:import java.io.File)
-  )
+  (:import java.io.File))
 
 (defn add-to-system-classpath
   "Add a path (string) to the system class loader. See

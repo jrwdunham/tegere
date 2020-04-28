@@ -2,17 +2,27 @@
   TeGere
 ================================================================================
 
-A Gherkin library for Clojure. The name "te gere" is intended to be a Latin
-translation of English "behave!". Modeled after `Python Behave`_.
-
-Yes, I do know about `cucumber-jvm`_ and `cucumber-js`_. TeGere offers a
-Clojure-first Gherkin library and an opportunity to use Instaparse_ to create a
-useful DSL.
+A Gherkin library for Clojure. To "te gere" is to carry oneself with dignity or,
+as the vulgar crowd might say, to "behave!".
 
     "Now, if you have one of these pretend testing systems that lets you write
     English strings so that the customer can look at it, that's just silly."
 
     -- Rich Hickey (Simple Made Easy talk)
+
+Yes, `cucumber-jvm`_ and `cucumber-js`_ exist. TeGere offers a Clojure-first
+Gherkin library and an opportunity to use Instaparse_ to create a useful DSL.
+Takes inspiration from `Python Behave`_.
+
+
+Quickstart
+================================================================================
+
+Add the following line to the `:deps` map of your deps.edn::
+
+    tegere
+    {:git/url "https://github.com/jrwdunham/tegere"
+     :sha "ca46ff34e05123ea3caf2cc438ec3781b96f071c"}}
 
 
 Usage

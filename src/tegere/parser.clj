@@ -6,7 +6,7 @@
   Each step map has :type and :text keys. All Scenario Outlines are converted
   to seqs of scenario maps; that is, the scenario outlines are expanded using
   their examples tables."
-  (:require [clojure.string :as s]
+  (:require [clojure.string :as str]
             [tegere.grammar :refer [feature-prsr]]))
 
 (defn get-branches-matching-root-label
@@ -43,11 +43,11 @@
        (get-first-branch-matching-root-label :FEATURE_DESCRIPTION_BLOCK)
        (get-branches-matching-root-label :FEATURE_DESCRIPTION_LINE)
        (map (comp
-             s/trim
+             str/trim
              second
              (fn [n] (get-first-branch-matching-root-label
                       :FEATURE_DESCRIPTION_FRAGMENT n))))
-       (s/join " ")))
+       (str/join " ")))
 
 (defn get-tags
   [tree]
@@ -56,7 +56,7 @@
        (get-first-branch-matching-root-label :TAG_SET)
        (get-branches-matching-root-label :TAG)
        (map (comp
-             s/trim
+             str/trim
              second
              (fn [n] (get-first-branch-matching-root-label :TAG_NAME n))))))
 
@@ -81,7 +81,7 @@
        (get-first-branch-matching-root-label line-key)
        (get-first-branch-matching-root-label text-key)
        second
-       s/trim))
+       str/trim))
 
 (defn get-scenario-description
   [scenario-tree]
@@ -94,7 +94,7 @@
 
 (defn step-str->kw
   [step-str]
-  (-> step-str s/lower-case keyword))
+  (-> step-str str/lower-case keyword))
 
 (defn get-step-type
   [step-tree]
@@ -111,7 +111,7 @@
   (->> step-tree
        (get-first-branch-matching-root-label :STEP_TEXT)
        second
-       s/trim))
+       str/trim))
 
 (defn process-step-tree
   [step-tree]
@@ -131,14 +131,14 @@
        (get-first-branch-matching-root-label :EXAMPLES_LINE)
        (get-first-branch-matching-root-label :EXAMPLES_TEXT)
        second
-       s/trim))
+       str/trim))
 
 (defn row-trees->matrix
   [row-trees]
   (map (fn [tr-tree]
          (->> tr-tree
               (get-branches-matching-root-label :CELL)
-              (map (comp s/trim second))))
+              (map (comp str/trim second))))
        row-trees))
 
 (defn row-trees->table
@@ -191,8 +191,8 @@
                       :parts
                       (map (fn [[k x]]
                              (if (= :variable-name k) (get table-row x) x)))
-                      (s/join "")
-                      (s/trim))})
+                      (str/join "")
+                      (str/trim))})
    so-steps))
 
 (defn scenario-outline->scenarios
