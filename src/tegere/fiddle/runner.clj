@@ -1,8 +1,8 @@
-(ns tegere.runner-fiddle
+(ns tegere.fiddle.runner
   "Fiddle file for playing around with runner.clj."
   (:require [tegere.runner :as r]
-            [tegere.parser :refer [parse]]
-            [tegere.grammar-fiddle :refer [monkey-feature]]))
+            [tegere.parser :as parser]
+            [tegere.fiddle.grammar :refer [chimpanzee-feature]]))
 
 (defn update-step-rets
   "Convenience fiddle function that appends val to the :step-rets key of the map
@@ -16,9 +16,9 @@
        (conj step-rets val)
        [val]))))
 
-;; A fake registry of step functions to test our Monkey Feature
+;; A fake registry of step functions to test our Chimpanzee Feature
 (def fake-registry
-  {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
+  {:given {"a chimpanzee" (fn [context] (update-step-rets context :a-chimpanzee))}
    :when {"I give him a banana" (fn [context] (update-step-rets context :give-banana))
           "I give him a pear" (fn [context] (update-step-rets context :give-pear))}
    :then {"he doesn't eat it" (fn [context] (update-step-rets context :not-eat))
@@ -32,11 +32,11 @@
 (defn for-repl
   "Call this in a REPL to see how printing to stdout works."
   [& {:keys [stop?] :or {stop? false}}]
-  (let [features [(parse monkey-feature) (parse monkey-feature)]
-        config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
+  (let [features [(parser/parse chimpanzee-feature) (parser/parse chimpanzee-feature)]
+        config {:tags {:and-tags #{"chimpanzees" "fruit-reactions"}}
                 :stop stop?}
         fake-registry
-        {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
+        {:given {"a chimpanzee" (fn [context] (update-step-rets context :a-chimpanzee))}
          :when {"I give him a banana"
                 (fn [context] (update-step-rets context :give-banana))
                 "I give him a pear"
@@ -56,12 +56,12 @@
 (def fake-run-outcome
   [{:steps
     [{:type :given
-      :text "a monkey"
+      :text "a chimpanzee"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.389-00:00"
        :end-time #inst "2019-07-28T15:42:19.389-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee]}
        :err nil}}
      {:type :when
       :text "I give him a banana"
@@ -69,7 +69,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.390-00:00"
        :end-time #inst "2019-07-28T15:42:19.390-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-banana]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-banana]}
        :err nil}}
      {:type :then
       :text "he is happy"
@@ -157,21 +157,21 @@
       :fn nil
       :execution nil}]
     :feature
-    {:name "Monkeys behave as expected"
+    {:name "Chimpanzees behave as expected"
      :description
-     "Experimenters want to ensure that their monkey simulations are behaving correctly."
-     :tags (list "monkeys")}
+     "Experimenters want to ensure that their chimpanzee simulations are behaving correctly."
+     :tags (list "chimpanzees")}
     :scenario
-    {:description "Monkeys behave as expected when offered various foods."
+    {:description "Chimpanzees behave as expected when offered various foods."
      :tags (list "fruit-reactions")}}
    {:steps
     [{:type :given
-      :text "a monkey"
+      :text "a chimpanzee"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee]}
        :err nil}}
      {:type :when
       :text "I give him a pear"
@@ -179,7 +179,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-pear]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-pear]}
        :err nil}}
      {:type :then
       :text "he is sad"
@@ -187,7 +187,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-pear :is-sad]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-pear :is-sad]}
        :err nil}}
      {:type :then
       :text "he doesn't eat it"
@@ -197,7 +197,7 @@
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
        :ctx-after-exec
-       {:step-rets [:a-monkey :give-with-var-pear :is-sad :not-eat]}
+       {:step-rets [:a-chimpanzee :give-with-var-pear :is-sad :not-eat]}
        :err nil}}
      {:type :then
       :text "he looks at me loathingly"
@@ -208,24 +208,24 @@
        :end-time #inst "2019-07-28T15:42:19.393-00:00"
        :ctx-after-exec
        {:step-rets
-        [:a-monkey :give-with-var-pear :is-sad :not-eat :looks-loathingly]}
+        [:a-chimpanzee :give-with-var-pear :is-sad :not-eat :looks-loathingly]}
        :err nil}}]
     :feature
-    {:name "Monkeys behave as expected"
+    {:name "Chimpanzees behave as expected"
      :description
-     "Experimenters want to ensure that their monkey simulations are behaving correctly."
-     :tags (list "monkeys")}
+     "Experimenters want to ensure that their chimpanzee simulations are behaving correctly."
+     :tags (list "chimpanzees")}
     :scenario
-    {:description "Monkeys behave as expected when offered various foods."
+    {:description "Chimpanzees behave as expected when offered various foods."
      :tags (list "fruit-reactions")}}
    {:steps
     [{:type :given
-      :text "a monkey"
+      :text "a chimpanzee"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.393-00:00"
        :end-time #inst "2019-07-28T15:42:19.393-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee]}
        :err nil}}
      {:type :when
       :text "I give him a banana"
@@ -233,7 +233,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-banana]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-banana]}
        :err nil}}
      {:type :then
       :text "he is happy"
@@ -325,21 +325,21 @@
       :fn nil
       :execution nil}]
     :feature
-    {:name "Monkeys behave as expected"
+    {:name "Chimpanzees behave as expected"
      :description
-     "Experimenters want to ensure that their monkey simulations are behaving correctly."
-     :tags (list "monkeys")}
+     "Experimenters want to ensure that their chimpanzee simulations are behaving correctly."
+     :tags (list "chimpanzees")}
     :scenario
-    {:description "Monkeys behave as expected when offered various foods."
+    {:description "Chimpanzees behave as expected when offered various foods."
      :tags (list "fruit-reactions")}}
    {:steps
     [{:type :given
-      :text "a monkey"
+      :text "a chimpanzee"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee]}
        :err nil}}
      {:type :when
       :text "I give him a pear"
@@ -347,7 +347,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-pear]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-pear]}
        :err nil}}
      {:type :then
       :text "he is sad"
@@ -355,7 +355,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-pear :is-sad]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-pear :is-sad]}
        :err nil}}
      {:type :then
       :text "he doesn't eat it"
@@ -365,7 +365,7 @@
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
        :ctx-after-exec
-       {:step-rets [:a-monkey :give-with-var-pear :is-sad :not-eat]}
+       {:step-rets [:a-chimpanzee :give-with-var-pear :is-sad :not-eat]}
        :err nil}}
      {:type :then
       :text "he looks at me loathingly"
@@ -376,28 +376,28 @@
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
        :ctx-after-exec
        {:step-rets
-        [:a-monkey :give-with-var-pear :is-sad :not-eat :looks-loathingly]}
+        [:a-chimpanzee :give-with-var-pear :is-sad :not-eat :looks-loathingly]}
        :err nil}}]
     :feature
-    {:name "Monkeys behave as expected"
+    {:name "Chimpanzees behave as expected"
      :description
-     "Experimenters want to ensure that their monkey simulations are behaving correctly."
-     :tags (list "monkeys")}
+     "Experimenters want to ensure that their chimpanzee simulations are behaving correctly."
+     :tags (list "chimpanzees")}
     :scenario
-    {:description "Monkeys behave as expected when offered various foods."
+    {:description "Chimpanzees behave as expected when offered various foods."
      :tags (list "fruit-reactions")}}])
 
 (def other-fake-run-outcome
   [{:steps
     [{:type :when
       :text
-      "a well-formed request is made to update the monkey-integrated liquidity for space 3170 of pork 651 owned by company 13"
+      "a well-formed request is made to update the chimpanzee-integrated liquidity for space 3170 of pork 651 owned by company 13"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T16:09:24.804-00:00"
        :end-time #inst "2019-07-28T16:09:26.200-00:00"
        :ctx-after-exec
-       {:update-monkey-liquidity-resp
+       {:update-chimpanzee-liquidity-resp
         [{:status "success" :updated-at "2019-07-28T12:09:25.943674"} nil]}
        :err nil}}
      {:type :then
@@ -409,25 +409,25 @@
        :ctx-after-exec {:step-return-value nil}
        :err nil}}]
     :feature
-    {:name "the porkcase monkey integration liquidity endpoint works"
+    {:name "the porkcase chimpanzee integration liquidity endpoint works"
      :description
-     "porkcase wants to ensure that requests to the monkey integration liquidity endpoint are handled correctly."
-     :tags (list "monkey" "liquidity")}
+     "porkcase wants to ensure that requests to the chimpanzee integration liquidity endpoint are handled correctly."
+     :tags (list "chimpanzee" "liquidity")}
     :scenario
     {:description
-     "Well-formed update requests to the monkey liquidity endpoint are handled correctly."
+     "Well-formed update requests to the chimpanzee liquidity endpoint are handled correctly."
      :tags (list "update")}}])
 
 ;; Like runner_test::fake-run-outcome-3 but split across two scenarios in one feature.
 (def fake-run-outcome-3
   [{:steps  ;; pass, pass, error, untested, untested
     [{:type :given
-      :text "a monkey"
+      :text "a chimpanzee"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.389-00:00"
        :end-time #inst "2019-07-28T15:42:19.389-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee]}
        :err nil}}
      {:type :when
       :text "I give him a banana"
@@ -435,7 +435,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.390-00:00"
        :end-time #inst "2019-07-28T15:42:19.390-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-banana]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-banana]}
        :err nil}}
      {:type :then
       :text "he is happy"
@@ -462,21 +462,21 @@
       :fn nil
       :execution nil}]
     :feature
-    {:name "Monkeys behave as expected"
+    {:name "Chimpanzees behave as expected"
      :description
-     "Experimenters want to ensure that their monkey simulations are behaving correctly."
-     :tags (list "monkeys")}
+     "Experimenters want to ensure that their chimpanzee simulations are behaving correctly."
+     :tags (list "chimpanzees")}
     :scenario
     {:description "A"
      :tags (list "a")}}
    {:steps  ;; pass, pass, pass, pass, pass
     [{:type :given
-      :text "a monkey"
+      :text "a chimpanzee"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee]}
        :err nil}}
      {:type :when
       :text "I give him a pear"
@@ -484,7 +484,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-pear]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-pear]}
        :err nil}}
      {:type :then
       :text "he is sad"
@@ -492,7 +492,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-pear :is-sad]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-pear :is-sad]}
        :err nil}}
      {:type :then
       :text "he doesn't eat it"
@@ -502,7 +502,7 @@
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
        :ctx-after-exec
-       {:step-rets [:a-monkey :give-with-var-pear :is-sad :not-eat]}
+       {:step-rets [:a-chimpanzee :give-with-var-pear :is-sad :not-eat]}
        :err nil}}
      {:type :then
       :text "he looks at me loathingly"
@@ -513,24 +513,24 @@
        :end-time #inst "2019-07-28T15:42:19.393-00:00"
        :ctx-after-exec
        {:step-rets
-        [:a-monkey :give-with-var-pear :is-sad :not-eat :looks-loathingly]}
+        [:a-chimpanzee :give-with-var-pear :is-sad :not-eat :looks-loathingly]}
        :err nil}}]
     :feature
-    {:name "Monkeys behave as expected"
+    {:name "Chimpanzees behave as expected"
      :description
-     "Experimenters want to ensure that their monkey simulations are behaving correctly."
-     :tags (list "monkeys")}
+     "Experimenters want to ensure that their chimpanzee simulations are behaving correctly."
+     :tags (list "chimpanzees")}
     :scenario
     {:description "A"
      :tags (list "a")}}
    {:steps  ;; pass, pass, error, untested, untested
     [{:type :given
-      :text "a monkey"
+      :text "a chimpanzee"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.393-00:00"
        :end-time #inst "2019-07-28T15:42:19.393-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee]}
        :err nil}}
      {:type :when
       :text "I give him a banana"
@@ -538,7 +538,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-banana]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-banana]}
        :err nil}}
      {:type :then
       :text "he is happy"
@@ -565,21 +565,21 @@
       :fn nil
       :execution nil}]
     :feature
-    {:name "Monkeys behave as expected"
+    {:name "Chimpanzees behave as expected"
      :description
-     "Experimenters want to ensure that their monkey simulations are behaving correctly."
-     :tags (list "monkeys")}
+     "Experimenters want to ensure that their chimpanzee simulations are behaving correctly."
+     :tags (list "chimpanzees")}
     :scenario
     {:description "B"
      :tags (list "b")}}
    {:steps  ;; pass, pass, pass, pass, pass
     [{:type :given
-      :text "a monkey"
+      :text "a chimpanzee"
       :fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee]}
        :err nil}}
      {:type :when
       :text "I give him a pear"
@@ -587,7 +587,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-pear]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-pear]}
        :err nil}}
      {:type :then
       :text "he is sad"
@@ -595,7 +595,7 @@
       :execution
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
-       :ctx-after-exec {:step-rets [:a-monkey :give-with-var-pear :is-sad]}
+       :ctx-after-exec {:step-rets [:a-chimpanzee :give-with-var-pear :is-sad]}
        :err nil}}
      {:type :then
       :text "he doesn't eat it"
@@ -605,7 +605,7 @@
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
        :ctx-after-exec
-       {:step-rets [:a-monkey :give-with-var-pear :is-sad :not-eat]}
+       {:step-rets [:a-chimpanzee :give-with-var-pear :is-sad :not-eat]}
        :err nil}}
      {:type :then
       :text "he looks at me loathingly"
@@ -616,13 +616,13 @@
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
        :ctx-after-exec
        {:step-rets
-        [:a-monkey :give-with-var-pear :is-sad :not-eat :looks-loathingly]}
+        [:a-chimpanzee :give-with-var-pear :is-sad :not-eat :looks-loathingly]}
        :err nil}}]
     :feature
-    {:name "Monkeys behave as expected"
+    {:name "Chimpanzees behave as expected"
      :description
-     "Experimenters want to ensure that their monkey simulations are behaving correctly."
-     :tags (list "monkeys")}
+     "Experimenters want to ensure that their chimpanzee simulations are behaving correctly."
+     :tags (list "chimpanzees")}
     :scenario
     {:description "B"
      :tags (list "b")}}])
@@ -642,57 +642,18 @@
 
   ((juxt :feature :scenario :outcome) (first other-fake-run-outcome))
 
-  (let [[a b] (if false [1 2] [3 4])]
-    [a b])
-
   (->> other-fake-run-outcome
        first
        r/analyze-step-execution
        ((juxt :feature :scenario :outcome)))
 
-  ;; {{:name "the porkcase monkey integration liquidity endpoint works",
-  ;;   :description
-  ;;   "porkcase wants to ensure that requests to the monkey integration liquidity endpoint are handled correctly.",
-  ;;   :tags ("monkey" "liquidity")}
-  ;;  {{:description
-  ;;    "Well-formed update requests to the monkey liquidity endpoint are handled correctly.",
-  ;;    :tags ("update")}
-  ;;   {:step-pass-count 2,
-  ;;    :step-untested-count 0,
-  ;;    :step-fail-count 0,
-  ;;    :execution-pass-count 1,
-  ;;    :execution-fail-count 0}}}
-
   (->> other-fake-run-outcome
        r/executions->outcome-map
-       r/outcome-map->outcome-summary-map
-       )
+       r/outcome-map->outcome-summary-map)
 
-  ;; Input:
-  ;; {{:name "Monkeys behave as expected",
-  ;;   :description
-  ;;   "Experimenters want to ensure that their monkey simulations are behaving correctly.",
-  ;;   :tags ("monkeys")}
-  ;;  {{:description "A", :tags ("a")}
-  ;;   {:step-pass-count 7,
-  ;;    :step-untested-count 2,
-  ;;    :step-fail-count 1,
-  ;;    :execution-pass-count 1,
-  ;;    :execution-fail-count 1},
-  ;;   {:description "B", :tags ("b")}
-  ;;   {:step-pass-count 7,
-  ;;    :step-untested-count 2,
-  ;;    :step-fail-count 1,
-  ;;    :execution-pass-count 1,
-  ;;    :execution-fail-count 1}}}
-  ;; Current output:
-  ;; {:features {:passed 1, :failed 0},
-  ;;  :scenarios {:passed 2, :failed 0},
-  ;;  :steps {:passed 24, :failed 0, :untested 0}}
   (->> fake-run-outcome-3
        r/executions->outcome-map
-       r/outcome-map->outcome-summary-map
-       )
+       r/outcome-map->outcome-summary-map)
 
   (let [scenarios
         {{:description "A" :tags (list "a")}
@@ -848,11 +809,11 @@
 
   ((r/get-step-fn fake-registry {:type :when :text "I give him a pear"}) {})
 
-  (let [features [(parse monkey-feature) (parse monkey-feature)]
-        config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
+  (let [features [(parser/parse chimpanzee-feature) (parser/parse chimpanzee-feature)]
+        config {:tags {:and-tags #{"chimpanzees" "fruit-reactions"}}
                 :stop false}
         fake-registry
-        {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
+        {:given {"a chimpanzee" (fn [context] (update-step-rets context :a-chimpanzee))}
          :when {"I give him a banana" (fn [context] (update-step-rets context :give-banana))
                 "I give him a pear" (fn [context] (update-step-rets context :give-pear))}
          :then {"he doesn't eat it" (fn [context] (update-step-rets context :not-eat))
@@ -865,11 +826,11 @@
                 (fn [context] (update-step-rets context :looks-quizzically))}}]
     (r/run features fake-registry config))
 
-  (let [features [(parse monkey-feature) (parse monkey-feature)]
-        config {:tags {:and-tags #{"monkeys" "fruit-reactions"}}
+  (let [features [(parser/parse chimpanzee-feature) (parser/parse chimpanzee-feature)]
+        config {:tags {:and-tags #{"chimpanzees" "fruit-reactions"}}
                 :stop false}
         fake-registry
-        {:given {"a monkey" (fn [context] (update-step-rets context :a-monkey))}
+        {:given {"a chimpanzee" (fn [context] (update-step-rets context :a-chimpanzee))}
          :when {"I give him a {fruit}"
                 (fn [context fruit]
                   (update-step-rets context (keyword (format "give-with-var-%s" fruit))))}

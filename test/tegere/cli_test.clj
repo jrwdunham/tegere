@@ -9,26 +9,25 @@
            (list "/path/to/dir/" "--opt=val" "-opt-2=val" "--flag"))
           parse2
           (sut/simple-cli-parser
-           (list "/path/to/dir/" "--tags=monkeys" "--tags=behaviour"))
+           (list "/path/to/dir/" "--tags=chimpanzees" "--tags=behaviour"))
           parse3
           (sut/simple-cli-parser
-           (list "/path/to/dir/" "--tags=monkeys" "--tags=behaviour"
+           (list "/path/to/dir/" "--tags=chimpanzees" "--tags=behaviour"
                  "--tags=a,b,c"))
           parse4
           (sut/simple-cli-parser
            (list "/path/to/dir/" "second pos arg" "--tags=a,b,c"
                  "--stop"))]
-      (do
-        (t/is (= parse1
-                 {:args ["/path/to/dir/"]
-                  :kwargs {:opt "val" :opt-2 "val" :flag true}}))
-        (t/is (= parse2
-                 {:args ["/path/to/dir/"]
-                  :kwargs {:and-tags #{"monkeys" "behaviour"}}}))
-        (t/is (= parse3
-                 {:args ["/path/to/dir/"]
-                  :kwargs {:and-tags #{"monkeys" "behaviour"}
-                           :or-tags #{"a" "b" "c"}}}))
-        (t/is (= parse4
-                 {:args ["/path/to/dir/" "second pos arg"]
-                  :kwargs {:or-tags #{"a" "b" "c"} :stop true}}))))))
+      (t/is (= parse1
+               {:args ["/path/to/dir/"]
+                :kwargs {:opt "val" :opt-2 "val" :flag true}}))
+      (t/is (= parse2
+               {:args ["/path/to/dir/"]
+                :kwargs {:and-tags #{"chimpanzees" "behaviour"}}}))
+      (t/is (= parse3
+               {:args ["/path/to/dir/"]
+                :kwargs {:and-tags #{"chimpanzees" "behaviour"}
+                         :or-tags #{"a" "b" "c"}}}))
+      (t/is (= parse4
+               {:args ["/path/to/dir/" "second pos arg"]
+                :kwargs {:or-tags #{"a" "b" "c"} :stop true}})))))

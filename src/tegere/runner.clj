@@ -4,6 +4,7 @@
   (:require [clojure.string :as s]
             [clojure.set :refer [intersection]]
             [tegere.utils :as u]
+            [tegere.parser :as p]
             [tegere.print :as tegprn]))
 
 (defn get-scenarios-matching-pred
@@ -35,13 +36,13 @@
   "Project the tags of feature to its scenario children under an :all-tags set
   key. This makes tag-based matching easier."
   [feature]
-  (let [feature-tags (get feature :tags ())
-        scenarios (:scenarios feature)]
+  (let [feature-tags (get feature ::p/tags ())
+        scenarios (::p/scenarios feature)]
     (assoc feature
-           :scenarios
+           ::p/scenarios
            (map (fn [scen]
                   (let [all-tags-set
-                        (set (concat feature-tags (:tags scen)))]
+                        (set (concat feature-tags (::p/tags scen)))]
                     (assoc scen :all-tags all-tags-set)))
                 scenarios))))
 
@@ -49,18 +50,18 @@
   "Return feature after removing all of its scenarios that do not match tags.
   If there are and-tags, those take precedence. If there are neither and-tags
   nor or-tags, then remove no scenarios."
-  [{:keys [and-tags or-tags]} {:keys [scenarios] :as feature}]
+  [{:keys [and-tags or-tags]} {:keys [::p/scenarios] :as feature}]
   (let [matching-scenarios
         (cond
           (seq and-tags) (get-scenarios-matching-all scenarios and-tags)
           (seq or-tags) (get-scenarios-matching-any scenarios or-tags)
           :else scenarios)]
-    (assoc feature :scenarios matching-scenarios)))
+    (assoc feature ::p/scenarios matching-scenarios)))
 
 (defn features-are-empty
   "Return true if there are no scenarios in features"
   [features]
-  (->> features (map :scenarios) flatten seq nil?))
+  (->> features (map ::p/scenarios) flatten seq nil?))
 
 (defn get-features-to-run
   "Return the features seq where each feature has had all of its scenarios
@@ -98,7 +99,7 @@
   from the matching step text. If there are multiple matches, return the one with
   the longest step function text---a simple heuristic for the most specific
   match."
-  [step-registry {step-type :type step-text :text}]
+  [step-registry {step-type ::p/type step-text ::p/text}]
   (->> step-registry
        step-type
        (map (fn [[step-fn-text step-fn]]
@@ -117,19 +118,19 @@
   [step-registry scenario]
   (assoc
    scenario
-   :steps
+   ::p/steps
    (map (fn [step]
           (assoc step :fn (get-step-fn step-registry step)))
-        (:steps scenario))))
+        (::p/steps scenario))))
 
 (defn add-step-fns-to-feature
   "Assign a step function, from step-registry, to each step map (under its :fn
   key) of each scenario of feature."
   [step-registry feature]
   (assoc feature
-         :scenarios
+         ::p/scenarios
          (map (partial add-step-fns-to-scenario step-registry)
-              (:scenarios feature))))
+              (::p/scenarios feature))))
 
 (defn get-missing-step-fns
   "Return the set of step maps in the features coll such that each step is
@@ -138,10 +139,10 @@
   (->> features
        (map (fn [feature]
               (->> feature
-                   :scenarios
+                   ::p/scenarios
                    (map (fn [scenario]
                           (->> scenario
-                               :steps
+                               ::p/steps
                                (filter (fn [step] (nil? (:fn step))))))))))
        flatten
        set))
@@ -155,8 +156,8 @@
                   (sort
                    (for [m missing-step-fns]
                      (format "(%s \"%s\" (fn [context] ...))"
-                             (-> m :type name s/capitalize)
-                             (:text m)))))))
+                             (-> m ::p/type name s/capitalize)
+                             (::p/text m)))))))
 
 (defn is-executable?
   "Return an error either if features are not executable, where the second item
@@ -205,7 +206,7 @@
   and after the step is executed. Catches any exception and sets the :err key
   to a string representation of the exception. The updated context will be set
   to :ctx-after-exec. If the return value is not a map, we embed it in a map
-  under :step-retern-value."
+  under :step-return-value."
   [step ctx]
   (let [start-time (java.util.Date.)
         [ctx-after-exec err] (call-step-fn step ctx)
@@ -231,24 +232,24 @@
       (list executed-step))))
 
 (defn execute-steps-map
-  [ctx {:keys [steps] :as steps-map}]
+  [ctx {:keys [::p/steps] :as steps-map}]
   (println "")
   (assoc steps-map
-         :steps
+         ::p/steps
          (execute-steps ctx steps)))
 
 (defn get-steps-map-seq
-  "Return a lazy sequence of steps maps. These are maps with :steps keys.
+  "Return a lazy sequence of steps maps. These are maps with ::p/steps keys.
   There is one steps map for each scenario in each feature in the supplied
   seq of features."
   ([[first-feature & rest-features]]
-    (get-steps-map-seq first-feature rest-features (:scenarios first-feature)))
+    (get-steps-map-seq first-feature rest-features (::p/scenarios first-feature)))
   ([first-feature features [first-scenario & rest-scenarios]]
    (lazy-seq
     (cons
-     {:steps (:steps first-scenario)
-      :feature (select-keys first-feature [:name :description :tags])
-      :scenario (select-keys first-scenario [:description :tags])}
+     {::p/steps (::p/steps first-scenario)
+      ::p/feature (select-keys first-feature [::p/name ::p/description ::p/tags])
+      ::p/scenario (select-keys first-scenario [::p/description ::p/tags])}
      (cond rest-scenarios
            (get-steps-map-seq first-feature features rest-scenarios)
            features (get-steps-map-seq features)
@@ -258,7 +259,7 @@
   "Return true if the final step of the supplied steps map executed without
   error, false otherwise."
   [executed-steps-map]
-  (let [final-step (-> executed-steps-map :steps last)]
+  (let [final-step (-> executed-steps-map ::p/steps last)]
     (and (:execution final-step) (not (:err final-step)))))
 
 (defn execute-steps-map-seq
@@ -267,8 +268,8 @@
   [ctx
    {:keys [stop last-feature last-scenario] :or {stop false} :as config}
    [first-steps-map & rest-steps-maps]]
-  (let [feature (:feature first-steps-map)
-        scenario (:scenario first-steps-map)]
+  (let [feature (::p/feature first-steps-map)
+        scenario (::p/scenario first-steps-map)]
     (when (or (nil? last-feature) (not= last-feature feature))
       (tegprn/print-feature feature))
     (when (or (nil? last-scenario) (not= last-scenario scenario))
@@ -298,17 +299,17 @@
   [initial-ctx stop features]
   [(->> features
         get-steps-map-seq
-        (filter #(-> % :steps some?))
+        (filter #(-> % ::p/steps some?))
         ((partial execute-steps-map-seq initial-ctx {:stop stop})))
    nil])
 
 (defn analyze-step-execution
   "Given a step execution map, return a reduced map containing the original
-  :feature and :scenario keys as well as a new :outcome key, whose value is a
+  ::p/feature and ::p/scenario keys as well as a new :outcome key, whose value is a
   keyword---:pass, :fail, or :error---indicating its outcome, and count keys
   detailing how many steps passed, failed and were untested."
   [execution]
-  (let [steps (:steps execution)
+  (let [steps (::p/steps execution)
         executions (->> steps (map :execution) (filter some?))
         last-err (->> executions last :err)
         step-pass-count (count (filter #(nil? (:err %)) executions))
@@ -316,7 +317,7 @@
         step-fail-count (- (count steps) step-pass-count step-untested-count)
         [execution-pass-count execution-fail-count]
         (if (nil? last-err) [1 0] [0 1])]
-    (merge (select-keys execution [:feature :scenario])
+    (merge (select-keys execution [::p/feature ::p/scenario])
            {:step-pass-count step-pass-count
             :step-untested-count step-untested-count
             :step-fail-count step-fail-count
@@ -325,7 +326,7 @@
             :outcome (get last-err :type :pass)})))
 
 (defn executions->outcome-map
-  "Convert a seq of execution maps (with keys :steps, :feature and :scenario) and
+  "Convert a seq of execution maps (with keys ::p/steps, ::p/feature and ::p/scenario) and
   return an outcome map, which maps features (maps) to maps from scenarios (maps)
   to maps that document step and execution pass/fail/untested counts."
   [executions]
@@ -334,7 +335,7 @@
        (reduce (fn [agg new]
                  (update-in
                   agg
-                  ((juxt :feature :scenario) new)
+                  ((juxt ::p/feature ::p/scenario) new)
                   (fn [existing-execution-analysis]
                     (merge-with
                      +
@@ -351,12 +352,12 @@
   (themselves maps) to scenario maps, where a scenario map maps scenarios
   (themselves maps) to a map from outcome keywords (:error) to integer counts::
 
-      {{:name 'Monkeys behave as expected'
-        :description 'Experimenters want to ...'
-        :tags ['monkeys']}
+      {{::p/name 'Chimpanzees behave as expected'
+        ::p/description 'Experimenters want to ...'
+        ::p/tags ['chimpanzees']}
        {
-        {:description 'Monkeys behave as expected ...'
-         :tags ['fruit-reactions']}
+        {::p/description 'Chimpanzees behave as expected ...'
+         ::p/tags ['fruit-reactions']}
         {:error 2, :fail 2}}}
 
   The output is a much simpler data structure that summarizes the counts of
@@ -410,9 +411,9 @@
   human-readable string summarizing the same information. Input is something
   like::
 
-      {:features {:passed 0 :failed 1}
-       :scenarios {:passed 0 :failed 1}
-       :steps {:passed 0 :failed 4}}
+      {::p/features {:passed 0 :failed 1}
+       ::p/scenarios {:passed 0 :failed 1}
+       ::p/steps {:passed 0 :failed 4}}
 
   and the corresponding output would be::
 

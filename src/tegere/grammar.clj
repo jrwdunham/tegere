@@ -53,7 +53,7 @@
 
 ;; "so" means "Scenario Outline". Steps in a scenario outline must be able to
 ;; recognize variable references between angle brackets, e.g.,
-;; "Given a <modifier> monkey".
+;; "Given a <modifier> chimpanzee".
 (def so-step-grmr
   (str
    "SO_STEP = INDENT STEP_LABEL (VARIABLE | STEP_TEXT)+ NEW_LINE\n"

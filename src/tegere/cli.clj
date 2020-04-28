@@ -1,6 +1,6 @@
 (ns tegere.cli
   "The Command-Line Interface (CLI) for TeGere. What allows you to call
-  `tegere --tags=monkey --stop` from a command line."
+  `tegere --tags=chimpanzee --stop` from a command line."
   (:require [clojure.string :as s]))
 
 (defn split-by-comma [string] (s/split string #",\s*"))

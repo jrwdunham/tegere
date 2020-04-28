@@ -75,8 +75,16 @@ Run the Tests
 Use the ``test`` alias defined in ``deps.edn``::
 
     $ clj -A:test
-    
-or Leiningen::
+
+To run tests specific to a single namespace, e.g., ``tegere.grammar``::
+
+    $ clj -A:test -n tegere.grammar-test
+
+To run a specific ``deftest``::
+
+    $ clj -A:test -n tegere.runner-test -v tegere.runner-test/can-run-simple-feature-test
+
+Or, use Leiningen to run the tests::
 
     $ lein test
 

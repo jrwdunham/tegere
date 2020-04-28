@@ -1,6 +1,7 @@
 (ns tegere.print
   (:require [clojure.string :as s]
-            [tegere.ansi :as tegansi]))
+            [tegere.ansi :as tegansi]
+            [tegere.parser :as p]))
 
 (defn get-step-duration
   "Return seconds taken to complete step"
@@ -9,7 +10,7 @@
 
 (defn get-step-type
   [step]
-  (get step :original-type (:type step)))
+  (get step ::p/original-type (::p/type step)))
 
 (defn get-step-repr
   [step start-time end-time]
@@ -18,7 +19,7 @@
               get-step-type
               name
               s/capitalize)
-          (:text step)
+          (::p/text step)
           (get-step-duration start-time end-time)))
 
 (defn format-step
@@ -75,12 +76,12 @@
 (defn get-feature-repr
   [feature]
   (format "\n%s%s %s\n  %s\n"
-          (if (:tags feature)
-            (tegansi/style (str "@" (s/join " @" (:tags feature)) "\n") :cyan)
+          (if (::p/tags feature)
+            (tegansi/style (str "@" (s/join " @" (::p/tags feature)) "\n") :cyan)
             "")
           (tegansi/style "Feature:" :magenta)
-          (:name feature)
-          (:description feature)))
+          (::p/name feature)
+          (::p/description feature)))
 
 (defn print-feature
   [feature]
@@ -89,11 +90,11 @@
 (defn get-scenario-repr
   [scenario]
   (format "\n%s  %s %s"
-          (if (:tags scenario)
-            (tegansi/style (str "  @" (s/join " @" (:tags scenario)) "\n") :cyan)
+          (if (::p/tags scenario)
+            (tegansi/style (str "  @" (s/join " @" (::p/tags scenario)) "\n") :cyan)
             "")
           (tegansi/style "Scenario:" :magenta)
-          (:description scenario)))
+          (::p/description scenario)))
 
 (defn print-scenario
   [scenario]
