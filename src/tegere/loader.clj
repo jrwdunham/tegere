@@ -26,5 +26,5 @@
   [root-path]
   (->> root-path
        find-feature-files
-       (map (comp parser/parse slurp str))
+       (mapv (comp parser/parse slurp str))
        #_u/maybes->maybe))

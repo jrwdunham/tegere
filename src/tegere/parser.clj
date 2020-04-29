@@ -83,10 +83,10 @@
        (get-first-branch-matching-root-label :TAG_LINE)
        (get-first-branch-matching-root-label :TAG_SET)
        (get-branches-matching-root-label :TAG)
-       (map (comp
-             str/trim
-             second
-             (fn [n] (get-first-branch-matching-root-label :TAG_NAME n))))))
+       (mapv (comp
+              str/trim
+              second
+              (fn [n] (get-first-branch-matching-root-label :TAG_NAME n))))))
 
 (defn get-feature-tags
   [feature-block-tree]
@@ -212,7 +212,7 @@
 
 (defn interpolate
   [so-steps table-row]
-  (map
+  (mapv
    (fn [step]
      {::type (:so-step-type step)
       ::text (->> step
@@ -254,8 +254,8 @@
                (assoc ::original-type first-step-type))
            first-step)]
      (if rest-steps
-       (cons first-step (repair-conj-steps rest-steps (::type first-step)))
-       (list first-step)))))
+       (vec (cons first-step (repair-conj-steps rest-steps (::type first-step))))
+       [first-step]))))
 
 (defmulti process-scenario (fn [st] (first st)))
 
@@ -289,7 +289,8 @@
   (->> feature-tree
        (get-branches-matching-root-labels [:SCENARIO :SCENARIO_OUTLINE])
        (map process-scenario)
-       flatten))
+       flatten
+       vec))
 
 (defn parse
   "Convert a string of Gherkin into a maybe `::feature` map. First parses the

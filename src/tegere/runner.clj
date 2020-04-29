@@ -1,56 +1,60 @@
 (ns tegere.runner
   "Defines run, which runs a seq of features that match a supplied tags map,
   using the step functions defined in a supplied step-registry"
-  (:require [clojure.string :as s]
+  (:require [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [clojure.set :refer [intersection]]
             [tegere.utils :as u]
             [tegere.parser :as p]
-            [tegere.print :as tegprn]))
+            [tegere.print :as tegprn]
+            [tegere.query :as q]))
+
+(s/def ::stop boolean?)
+(s/def ::verbose boolean?)
+(s/def ::data (s/map-of keyword? string?))
+(s/def ::tag string?)
+(s/def ::tag-set (s/coll-of ::tag :kind set?))
+(s/def ::and-tags ::tag-set)
+(s/def ::or-tags ::tag-set)
+(s/def ::tags
+  (s/keys :req [::and-tags
+                ::or-tags]))
+(s/def ::features-path string?)
+(s/def ::config
+  (s/keys :req [::stop
+                ::verbose
+                ::data
+                ::tags
+                ::features-path]))
 
 (defn get-scenarios-matching-pred
-  "Return subset of scenarios matching pred according to their :all-tags key"
+  "Return subset of scenarios matching pred according to their ::q/tags key"
   [scenarios pred]
-  (filter
-   (fn [{:keys [all-tags]}] (pred all-tags))
+  (filterv
+   (fn [{tags ::q/tags}] (pred tags))
    scenarios))
 
 (defn get-scenarios-matching-all
   "Return subset of scenarios that have all of the and-tags in the value of
-  their :all-tags keys"
+  their ::q/tags keys"
   [scenarios and-tags]
   (get-scenarios-matching-pred
    scenarios
-   (fn [all-tags]
-     (= and-tags (intersection all-tags and-tags)))))
+   (fn [tags] (= and-tags (intersection tags and-tags)))))
 
 (defn get-scenarios-matching-any
   "Return subset of scenarios that have any of the or-tags in the value of
-  their :all-tags keys"
+  their ::q/tags keys"
   [scenarios or-tags]
   (get-scenarios-matching-pred
    scenarios
-   (fn [all-tags]
-     (seq (intersection all-tags or-tags)))))
-
-(defn project-tags
-  "Project the tags of feature to its scenario children under an :all-tags set
-  key. This makes tag-based matching easier."
-  [feature]
-  (let [feature-tags (get feature ::p/tags ())
-        scenarios (::p/scenarios feature)]
-    (assoc feature
-           ::p/scenarios
-           (map (fn [scen]
-                  (let [all-tags-set
-                        (set (concat feature-tags (::p/tags scen)))]
-                    (assoc scen :all-tags all-tags-set)))
-                scenarios))))
+   (fn [tags] (seq (intersection tags or-tags)))))
 
 (defn remove-non-matching-scenarios
   "Return feature after removing all of its scenarios that do not match tags.
   If there are and-tags, those take precedence. If there are neither and-tags
   nor or-tags, then remove no scenarios."
-  [{:keys [and-tags or-tags]} {:keys [::p/scenarios] :as feature}]
+  [{:keys [::and-tags ::or-tags]} {:keys [::p/scenarios] :as feature}]
   (let [matching-scenarios
         (cond
           (seq and-tags) (get-scenarios-matching-all scenarios and-tags)
@@ -73,7 +77,7 @@
   removed that do not match tags."
   [tags features]
   (->> features
-       (map project-tags)
+       q/set-all-scenario-tags
        (map (partial remove-non-matching-scenarios tags))
        ensure-some-features))
 
@@ -88,7 +92,7 @@
   [step-fn-text step-text]
   (let [var-name-regex #"\{[-\w]+\}"
         step-fn-regex
-        (-> step-fn-text (s/replace var-name-regex "(.+)") re-pattern)
+        (-> step-fn-text (str/replace var-name-regex "(.+)") re-pattern)
         matches (re-find step-fn-regex step-text)]
     (if matches
       (if (sequential? matches) (rest matches) ())
@@ -154,11 +158,11 @@
   order to define the missing step functions."
   [missing-step-fns]
   (format "Please write step functions with the following signatures:\n%s"
-          (s/join "\n\n"
+          (str/join "\n\n"
                   (sort
                    (for [m missing-step-fns]
                      (format "(%s \"%s\" (fn [context] ...))"
-                             (-> m ::p/type name s/capitalize)
+                             (-> m ::p/type name str/capitalize)
                              (::p/text m)))))))
 
 (defn is-executable?
@@ -462,7 +466,7 @@
   "Run seq of features matching tags using the step functions defined in
   step-registry"
   ([features step-registry] (run features step-registry {}))
-  ([features step-registry {:keys [tags stop] :or {tags {} stop false}}
+  ([features step-registry {:keys [::tags ::stop] :or {tags {} stop false}}
     & {:keys [initial-ctx] :or {initial-ctx {}}}]
    (let [[outcome err] (u/err->> features
                                  (partial get-features-to-run tags)

@@ -1,5 +1,7 @@
 {:deps
  {alandipert/intension {:mvn/version "1.1.1"}
+  datascript {:mvn/version "0.18.11"}
+  me.raynes/fs {:mvn/version "1.4.6"}
   org.clojure/clojure {:mvn/version "1.9.0"}
   org.clojure/spec.alpha {:mvn/version "0.2.176"}
   org.clojure/tools.cli {:mvn/version "1.0.194"}

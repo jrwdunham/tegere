@@ -685,19 +685,19 @@
                               expr features)))]
       (t/is (= 3 scenario-count))
       (t/is (= 3 (get-match-count
-                  {:and-tags #{"chimpanzees"}})))
+                  {::sut/and-tags #{"chimpanzees"}})))
       (t/is (= 1 (get-match-count
-                  {:and-tags #{"chimpanzees" "orangutan"}})))
+                  {::sut/and-tags #{"chimpanzees" "orangutan"}})))
       (t/is (= 1 (get-match-count
-                  {:and-tags #{"orangutan"}})))
+                  {::sut/and-tags #{"orangutan"}})))
       (t/is (= 2 (get-match-count
-                  {:and-tags #{"chimpanzees" "fruit-reactions"}})))
+                  {::sut/and-tags #{"chimpanzees" "fruit-reactions"}})))
       (t/is (= 2 (get-match-count
-                  {:and-tags #{"fruit-reactions"}})))
+                  {::sut/and-tags #{"fruit-reactions"}})))
       (t/is (= 0 (get-match-count
-                  {:and-tags #{"orangutan" "fruit-reactions"}})))
+                  {::sut/and-tags #{"orangutan" "fruit-reactions"}})))
       (t/is (= 0 (get-match-count
-                  {:and-tags #{"fake-tag"}}))))))
+                  {::sut/and-tags #{"fake-tag"}}))))))
 
 (t/deftest any-tags-filtering-test
   (t/testing "Any/or tag filters work"
@@ -707,19 +707,19 @@
                              (sut/get-features-to-run
                               expr features)))]
       (t/is (= 3 (get-match-count
-                  {:or-tags #{"chimpanzees"}})))
+                  {::sut/or-tags #{"chimpanzees"}})))
       (t/is (= 3 (get-match-count
-                  {:or-tags #{"chimpanzees" "orangutan"}})))
+                  {::sut/or-tags #{"chimpanzees" "orangutan"}})))
       (t/is (= 1 (get-match-count
-                  {:or-tags #{"orangutan"}})))
+                  {::sut/or-tags #{"orangutan"}})))
       (t/is (= 3 (get-match-count
-                  {:or-tags #{"chimpanzees" "fruit-reactions"}})))
+                  {::sut/or-tags #{"chimpanzees" "fruit-reactions"}})))
       (t/is (= 2 (get-match-count
-                  {:or-tags #{"fruit-reactions"}})))
+                  {::sut/or-tags #{"fruit-reactions"}})))
       (t/is (= 3 (get-match-count
-                  {:or-tags #{"orangutan" "fruit-reactions"}})))
+                  {::sut/or-tags #{"orangutan" "fruit-reactions"}})))
       (t/is (= 0 (get-match-count
-                  {:or-tags #{"fake-tag"}}))))))
+                  {::sut/or-tags #{"fake-tag"}}))))))
 
 (t/deftest all-tags-override-or-tags-test
   (t/testing "All/and tag filters override any/or tag filters"
@@ -729,26 +729,26 @@
                              (sut/get-features-to-run
                               expr features)))]
       (t/is (= 3 (get-match-count
-                  {:and-tags #{"chimpanzees"}
-                   :or-tags #{"chimpanzees"}})))
+                  {::sut/and-tags #{"chimpanzees"}
+                   ::sut/or-tags #{"chimpanzees"}})))
       (t/is (= 1 (get-match-count
-                  {:and-tags #{"chimpanzees" "orangutan"}
-                   :or-tags #{"chimpanzees" "orangutan"}})))
+                  {::sut/and-tags #{"chimpanzees" "orangutan"}
+                   ::sut/or-tags #{"chimpanzees" "orangutan"}})))
       (t/is (= 1 (get-match-count
-                  {:and-tags #{"orangutan"}
-                   :or-tags #{"orangutan"}})))
+                  {::sut/and-tags #{"orangutan"}
+                   ::sut/or-tags #{"orangutan"}})))
       (t/is (= 2 (get-match-count
-                  {:and-tags #{"chimpanzees" "fruit-reactions"}
-                   :or-tags #{"chimpanzees" "fruit-reactions"}})))
+                  {::sut/and-tags #{"chimpanzees" "fruit-reactions"}
+                   ::sut/or-tags #{"chimpanzees" "fruit-reactions"}})))
       (t/is (= 2 (get-match-count
-                  {:and-tags #{"fruit-reactions"}
-                   :or-tags #{"fruit-reactions"}})))
+                  {::sut/and-tags #{"fruit-reactions"}
+                   ::sut/or-tags #{"fruit-reactions"}})))
       (t/is (= 0 (get-match-count
-                  {:and-tags #{"orangutan" "fruit-reactions"}
-                   :or-tags #{"orangutan" "fruit-reactions"}})))
+                  {::sut/and-tags #{"orangutan" "fruit-reactions"}
+                   ::sut/or-tags #{"orangutan" "fruit-reactions"}})))
       (t/is (= 0 (get-match-count
-                  {:and-tags #{"fake-tag"}
-                   :or-tags #{"fake-tag"}}))))))
+                  {::sut/and-tags #{"fake-tag"}
+                   ::sut/or-tags #{"fake-tag"}}))))))
 
 (t/deftest can-run-simple-feature-test
   (t/testing "We can run a simple feature"
@@ -825,11 +825,11 @@
                 (nth exec-step-rets 12)])))))
 
 (t/deftest stop-flag-works-test
-  (t/testing "The :stop true flag tells the test runner to stop running
+  (t/testing "The ::sut/stop true flag tells the test runner to stop running
              scenarios after the first one fails."
     (let [features [(parser/parse chimpanzee-feature)]
           execution
-          (ignore-out-err (sut/run features fake-registry-error {:stop true}))
+          (ignore-out-err (sut/run features fake-registry-error {::sut/stop true}))
           exec-steps (->> execution (map ::parser/steps) flatten)
           success-exec-steps (filter
                               (fn [s] (nil? (-> s :execution :err))) exec-steps)
