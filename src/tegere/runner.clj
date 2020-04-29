@@ -58,10 +58,15 @@
           :else scenarios)]
     (assoc feature ::p/scenarios matching-scenarios)))
 
-(defn features-are-empty
+(defn features-are-empty?
   "Return true if there are no scenarios in features"
   [features]
   (->> features (map ::p/scenarios) flatten seq nil?))
+
+(defn ensure-some-features [features]
+  (if (features-are-empty? features)
+    (u/nothing "No features match the supplied tags")
+    (u/just features)))
 
 (defn get-features-to-run
   "Return the features seq where each feature has had all of its scenarios
@@ -70,10 +75,7 @@
   (->> features
        (map project-tags)
        (map (partial remove-non-matching-scenarios tags))
-       ((fn [features]
-          (if (features-are-empty features)
-            [nil "No features match the supplied tags"]
-            [features nil])))))
+       ensure-some-features))
 
 (defn get-step-fn-args
   "Return a vector of arguments (strings) from step-text that match any patterns
@@ -459,14 +461,15 @@
 (defn run
   "Run seq of features matching tags using the step functions defined in
   step-registry"
-  [features step-registry {:keys [tags stop] :or {tags {} stop false}}
-   & {:keys [initial-ctx] :or {initial-ctx {}}}]
-  (let [[outcome err] (u/err->> features
-                                (partial get-features-to-run tags)
-                                (partial add-step-fns step-registry)
-                                (partial execute initial-ctx stop))]
-    (if err
-      (do (println err)
-          err)
-      (do (println (get-outcome-summary outcome))
-          outcome))))
+  ([features step-registry] (run features step-registry {}))
+  ([features step-registry {:keys [tags stop] :or {tags {} stop false}}
+    & {:keys [initial-ctx] :or {initial-ctx {}}}]
+   (let [[outcome err] (u/err->> features
+                                 (partial get-features-to-run tags)
+                                 (partial add-step-fns step-registry)
+                                 (partial execute initial-ctx stop))]
+     (if err
+       (do (println err)
+           err)
+       (do (println (get-outcome-summary outcome))
+           outcome)))))
