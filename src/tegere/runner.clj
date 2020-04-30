@@ -40,7 +40,7 @@
   [scenarios and-tags]
   (get-scenarios-matching-pred
    scenarios
-   (fn [tags] (= and-tags (intersection tags and-tags)))))
+   (fn [tags] (= and-tags (intersection (set tags) and-tags)))))
 
 (defn get-scenarios-matching-any
   "Return subset of scenarios that have any of the or-tags in the value of
@@ -48,7 +48,7 @@
   [scenarios or-tags]
   (get-scenarios-matching-pred
    scenarios
-   (fn [tags] (seq (intersection tags or-tags)))))
+   (fn [tags] (seq (intersection (set tags) or-tags)))))
 
 (defn remove-non-matching-scenarios
   "Return feature after removing all of its scenarios that do not match tags.
