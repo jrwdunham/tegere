@@ -236,4 +236,20 @@
 
   gr/feature-grmr
 
+  ;; ==============================================================================
+  ;; "Old-style"" tag expression grammar
+  ;; ==============================================================================
+
+  (gr/old-style-tag-expr-prsr "cat , ~@dog")
+
+  (gr/old-style-tag-expr-prsr "cat , ~@dog,cow     ,   ~bunny")
+
+  (gr/old-style-tag-expr-prsr "cat,~@dog,cow,~bunny")
+
+  (gr/old-style-tag-expr-prsr "cat")
+
+  (gr/old-style-tag-expr-prsr "@cat")
+
+  (gr/old-style-tag-expr-prsr "~@cat")
+
 )

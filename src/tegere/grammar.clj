@@ -233,3 +233,58 @@
   [input]
   (let [input (if (string/ends-with? input "\n") input (str input "\n"))]
     (-feature-prsr input)))
+
+;; ==============================================================================
+;; "Old-style"" tag expression grammar
+;; ==============================================================================
+
+(def tag-cli-grmr
+  (str
+   "<TAG> = <[TAG_SYMBOL]> TAG_NAME\n"
+   "TAG_SYMBOL = '@'\n"
+   "<TAG_NAME> = #'[^\\s@~][^\\s,]*'"))
+
+(def tag-cli-prsr (insta/parser tag-cli-grmr))
+
+(def negated-tag-cli-grmr
+  (str
+   "NEG = <NEGATION> TAG\n"
+   "NEGATION = '~'\n"
+   tag-cli-grmr))
+
+(def negated-tag-cli-prsr (insta/parser negated-tag-cli-grmr))
+
+(def tag-phrase-cli-grmr
+  (str
+   "<TAG_PHRASE> = TAG | NEG\n"
+   tag-cli-grmr
+   negated-tag-cli-grmr))
+
+(def tag-phrase-cli-prsr (insta/parser tag-phrase-cli-grmr))
+
+(def disjunction-tags-cli-grmr
+  (str
+   "DISJ = TAG DISJUNCT+\n"
+   "<DISJUNCT> = <WS*> <OR> <WS*> TAG_PHRASE\n"
+   "OR = ','\n"
+   "WS = #'\\s'\n"
+   tag-phrase-cli-grmr))
+
+(def disjunction-tags-cli-prsr (insta/parser disjunction-tags-cli-grmr))
+
+(def old-style-tag-expr-grmr
+  (str
+   "<OSTE> = DISJ | TAG_PHRASE\n"
+   disjunction-tags-cli-grmr))
+
+(def old-style-tag-expr-prsr
+  "This should parse old-style tag expression strings, like '@dog,~@cat', into
+  raw tags, negated tag vectors, or vectors of disjoined tag expressions. The @
+  sign before tags is optional and whitespace between tags is removed. Examples:
+
+      cat                      => (cat)
+      @cat                     => (cat)
+      ~@cat                    => ([:NEG cat])
+      cat,~@dog,cow,~bunny     => ([:DISJ cat [:NEG dog] cow [:NEG bunny]])
+      cat , ~@dog,cow , ~bunny => ([:DISJ cat [:NEG dog] cow [:NEG bunny]])"
+  (insta/parser old-style-tag-expr-grmr))
