@@ -22,7 +22,7 @@
           (or "chimpanzees" "orangutan")
           (not "response=sad"))]
     (->> (query/query features where)
-         extract-all-scenario-tags))
+         #_extract-all-scenario-tags))
 
   ;; This should evaluate to true, showing the equivalence of the all
   ;; ``:tegere.query/query-tree`` and the old-style query expressions in each

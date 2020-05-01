@@ -15,18 +15,6 @@
   (let [[k v] (str/split data #"=" 2)]
     {(keyword k) v}))
 
-(defn- setify-with-comma-split [s]
-  (let [[x & y :as z] (str/split s #",\s*")]
-    (if y (set z) (set [x]))))
-
-(defn- process-tags-directive
-  [opts _ val]
-  (update-in
-   opts
-   [::r/tags (if (= 1 (count val)) ::r/and-tags ::r/or-tags)]
-   set/union
-   val))
-
 (defn conjoin-tag-expression
   "Conjoin ``val`` to existing ``::q/query-tree`` at ``id`` of ``opts`` using
   ``'and``."
@@ -36,10 +24,6 @@
            (list 'and val existing-query-tree)
            val)))
 
-(defn parse-tag-expression
-  [tag-expr]
-  (p/parse-old-style-tag-expression tag-expr))
-
 (def cli-options
   [["-h" "--help" :id ::r/help]
    ["-s" "--stop" :default false :id ::r/stop]
@@ -48,7 +32,7 @@
    ;; Transform --tags values into a ::q/query-try for datascript-based query.
    ["-t" "--tags TAGS" "Tags to control which features are executed"
     :assoc-fn conjoin-tag-expression
-    :parse-fn parse-tag-expression
+    :parse-fn p/parse-tag-expression-with-fallback
     :id ::q/query-tree]
 
    ["-D" "--data KEYVAL" "Data in key=val format to pass to Apes Gherkin"
@@ -79,7 +63,7 @@
   {::r/stop false
    ::r/verbose false
    ::r/data {}
-   ::r/tags {::r/and-tags #{} ::r/or-tags #{}}
+   ::q/query-tree nil
    ::r/features-path "."})
 
 (defn validate-args
@@ -143,5 +127,20 @@
                          "--tags=~@ant"
                          ])
          ::q/query-tree))
+
+  (-> (validate-args
+       ["examples/apes/src/apes/features"
+        "--tags=cow,chicken"
+        "--tags=not @a or @b and not @c or not @d or @e and @f"])
+      ::q/query-tree)
+
+  (validate-args
+   ["examples/apes/src/apes/features"
+    "--tags=cow,chicken"
+    "--tags=not @a or @b and not @c or not @d or @e and @f"
+    "-Durl=http://api.example.com"
+    "--data=password=secret"
+    "--stop"
+    "--verbose"])
 
 )

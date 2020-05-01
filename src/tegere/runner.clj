@@ -12,55 +12,13 @@
 (s/def ::stop boolean?)
 (s/def ::verbose boolean?)
 (s/def ::data (s/map-of keyword? string?))
-(s/def ::tag string?)
-(s/def ::tag-set (s/coll-of ::tag :kind set?))
-(s/def ::and-tags ::tag-set)
-(s/def ::or-tags ::tag-set)
-(s/def ::tags
-  (s/keys :req [::and-tags
-                ::or-tags]))
 (s/def ::features-path string?)
 (s/def ::config
   (s/keys :req [::stop
                 ::verbose
                 ::data
-                ::tags
+                ::q/query-tree
                 ::features-path]))
-
-(defn get-scenarios-matching-pred
-  "Return subset of scenarios matching pred according to their ::q/tags key"
-  [scenarios pred]
-  (filterv
-   (fn [{tags ::q/tags}] (pred tags))
-   scenarios))
-
-(defn get-scenarios-matching-all
-  "Return subset of scenarios that have all of the and-tags in the value of
-  their ::q/tags keys"
-  [scenarios and-tags]
-  (get-scenarios-matching-pred
-   scenarios
-   (fn [tags] (= and-tags (intersection (set tags) and-tags)))))
-
-(defn get-scenarios-matching-any
-  "Return subset of scenarios that have any of the or-tags in the value of
-  their ::q/tags keys"
-  [scenarios or-tags]
-  (get-scenarios-matching-pred
-   scenarios
-   (fn [tags] (seq (intersection (set tags) or-tags)))))
-
-(defn remove-non-matching-scenarios
-  "Return feature after removing all of its scenarios that do not match tags.
-  If there are and-tags, those take precedence. If there are neither and-tags
-  nor or-tags, then remove no scenarios."
-  [{:keys [::and-tags ::or-tags]} {:keys [::p/scenarios] :as feature}]
-  (let [matching-scenarios
-        (cond
-          (seq and-tags) (get-scenarios-matching-all scenarios and-tags)
-          (seq or-tags) (get-scenarios-matching-any scenarios or-tags)
-          :else scenarios)]
-    (assoc feature ::p/scenarios matching-scenarios)))
 
 (defn features-are-empty?
   "Return true if there are no scenarios in features"
@@ -73,13 +31,13 @@
     (u/just features)))
 
 (defn get-features-to-run
-  "Return the features seq where each feature has had all of its scenarios
-  removed that do not match tags."
-  [tags features]
-  (->> features
-       q/set-all-scenario-tags
-       (map (partial remove-non-matching-scenarios tags))
-       ensure-some-features))
+  "Return the substructure of the ``features`` coll such that all
+  feature/scenario pairs within it match the supplied ``::tegere.query/query``
+  ``query``."
+  [query features]
+  (-> features
+      (q/query query)
+      ensure-some-features))
 
 (defn get-step-fn-args
   "Return a vector of arguments (strings) from step-text that match any patterns
@@ -466,10 +424,10 @@
   "Run seq of features matching tags using the step functions defined in
   step-registry"
   ([features step-registry] (run features step-registry {}))
-  ([features step-registry {:keys [::tags ::stop] :or {tags {} stop false}}
+  ([features step-registry {query ::q/query-tree stop ::stop :or {stop false}}
     & {:keys [initial-ctx] :or {initial-ctx {}}}]
    (let [[outcome err] (u/err->> features
-                                 (partial get-features-to-run tags)
+                                 (partial get-features-to-run query)
                                  (partial add-step-fns step-registry)
                                  (partial execute initial-ctx stop))]
      (if err

@@ -675,80 +675,67 @@
      (binding [*out* s# *err* s#]
        ~@body)))
 
-(t/deftest all-tags-filtering-test
-  (t/testing "All/and tag filters work"
+(t/deftest query-tree-based-filtering-test
+  (t/testing "Filtering using a ::tegere.query/query-tree works"
     (let [features [(parser/parse chimpanzee-feature)]
           scenario-count (count-scenarios [features nil])
-          get-match-count (fn [expr]
+          get-match-count (fn [query]
                             (count-scenarios
-                             (sut/get-features-to-run
-                              expr features)))]
-      (t/is (= 3 scenario-count))
-      (t/is (= 3 (get-match-count
-                  {::sut/and-tags #{"chimpanzees"}})))
-      (t/is (= 1 (get-match-count
-                  {::sut/and-tags #{"chimpanzees" "orangutan"}})))
-      (t/is (= 1 (get-match-count
-                  {::sut/and-tags #{"orangutan"}})))
-      (t/is (= 2 (get-match-count
-                  {::sut/and-tags #{"chimpanzees" "fruit-reactions"}})))
-      (t/is (= 2 (get-match-count
-                  {::sut/and-tags #{"fruit-reactions"}})))
-      (t/is (= 0 (get-match-count
-                  {::sut/and-tags #{"orangutan" "fruit-reactions"}})))
-      (t/is (= 0 (get-match-count
-                  {::sut/and-tags #{"fake-tag"}}))))))
+                             (sut/get-features-to-run query features)))
+          expectations
+          [[3 nil]
+           [3 "@chimpanzees"]
+           [1 "@chimpanzees and @orangutan"]
+           [1 "@orangutan"]
+           [2 "@chimpanzees and @fruit-reactions"]
+           [2 "@fruit-reactions"]
+           [0 "@orangutan and @fruit-reactions"]
+           [0 "@fake-tag"]
+           [1 "@manner_of_looking=quizzically"]
+           [3 "@chimpanzees or @orangutan"]
+           [3 "@fruit-reactions or @orangutan"]
+           [3 "@chimpanzees or @chimpanzees"]
+           #_[1 "((@chimpanzees and @orangutan) and (@chimpanzees or @orangutan))"]
+           ]
+          ]
+      (doseq [[matches query] expectations]
+        (t/is (= matches
+                 (get-match-count
+                  (when query
+                    (parser/parse-tag-expression-with-fallback
+                     query)))))))))
 
-(t/deftest any-tags-filtering-test
-  (t/testing "Any/or tag filters work"
-    (let [features [(parser/parse chimpanzee-feature)]
-          get-match-count (fn [expr]
-                            (count-scenarios
-                             (sut/get-features-to-run
-                              expr features)))]
-      (t/is (= 3 (get-match-count
-                  {::sut/or-tags #{"chimpanzees"}})))
-      (t/is (= 3 (get-match-count
-                  {::sut/or-tags #{"chimpanzees" "orangutan"}})))
-      (t/is (= 1 (get-match-count
-                  {::sut/or-tags #{"orangutan"}})))
-      (t/is (= 3 (get-match-count
-                  {::sut/or-tags #{"chimpanzees" "fruit-reactions"}})))
-      (t/is (= 2 (get-match-count
-                  {::sut/or-tags #{"fruit-reactions"}})))
-      (t/is (= 3 (get-match-count
-                  {::sut/or-tags #{"orangutan" "fruit-reactions"}})))
-      (t/is (= 0 (get-match-count
-                  {::sut/or-tags #{"fake-tag"}}))))))
+(comment
 
-(t/deftest all-tags-override-or-tags-test
-  (t/testing "All/and tag filters override any/or tag filters"
-    (let [features [(parser/parse chimpanzee-feature)]
-          get-match-count (fn [expr]
-                            (count-scenarios
-                             (sut/get-features-to-run
-                              expr features)))]
-      (t/is (= 3 (get-match-count
-                  {::sut/and-tags #{"chimpanzees"}
-                   ::sut/or-tags #{"chimpanzees"}})))
-      (t/is (= 1 (get-match-count
-                  {::sut/and-tags #{"chimpanzees" "orangutan"}
-                   ::sut/or-tags #{"chimpanzees" "orangutan"}})))
-      (t/is (= 1 (get-match-count
-                  {::sut/and-tags #{"orangutan"}
-                   ::sut/or-tags #{"orangutan"}})))
-      (t/is (= 2 (get-match-count
-                  {::sut/and-tags #{"chimpanzees" "fruit-reactions"}
-                   ::sut/or-tags #{"chimpanzees" "fruit-reactions"}})))
-      (t/is (= 2 (get-match-count
-                  {::sut/and-tags #{"fruit-reactions"}
-                   ::sut/or-tags #{"fruit-reactions"}})))
-      (t/is (= 0 (get-match-count
-                  {::sut/and-tags #{"orangutan" "fruit-reactions"}
-                   ::sut/or-tags #{"orangutan" "fruit-reactions"}})))
-      (t/is (= 0 (get-match-count
-                  {::sut/and-tags #{"fake-tag"}
-                   ::sut/or-tags #{"fake-tag"}}))))))
+  (parser/parse-tag-expression-with-fallback
+   "(@chimpanzees and @orangutan) and (@chimpanzees or @orangutan)")
+
+  (parser/parse-tag-expression-with-fallback
+   "((@chimpanzees and @orangutan) and (@chimpanzees or @orangutan))")
+
+)
+
+#_(t/is (= 3 (get-match-count
+            {::sut/and-tags #{"chimpanzees"}
+              ::sut/or-tags #{"chimpanzees"}})))
+#_(t/is (= 1 (get-match-count
+            {::sut/and-tags #{"chimpanzees" "orangutan"}
+              ::sut/or-tags #{"chimpanzees" "orangutan"}})))
+#_(t/is (= 1 (get-match-count
+            {::sut/and-tags #{"orangutan"}
+              ::sut/or-tags #{"orangutan"}})))
+#_(t/is (= 2 (get-match-count
+            {::sut/and-tags #{"chimpanzees" "fruit-reactions"}
+              ::sut/or-tags #{"chimpanzees" "fruit-reactions"}})))
+#_(t/is (= 2 (get-match-count
+            {::sut/and-tags #{"fruit-reactions"}
+              ::sut/or-tags #{"fruit-reactions"}})))
+#_(t/is (= 0 (get-match-count
+            {::sut/and-tags #{"orangutan" "fruit-reactions"}
+              ::sut/or-tags #{"orangutan" "fruit-reactions"}})))
+#_(t/is (= 0 (get-match-count
+            {::sut/and-tags #{"fake-tag"}
+              ::sut/or-tags #{"fake-tag"}})))
 
 (t/deftest can-run-simple-feature-test
   (t/testing "We can run a simple feature"
