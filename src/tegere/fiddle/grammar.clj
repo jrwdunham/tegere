@@ -1,6 +1,7 @@
 (ns tegere.fiddle.grammar
   "Fiddle file for playing around with grammar.clj."
   (:require [clojure.string :as str]
+            [instaparse.core :as insta]
             [tegere.grammar :as gr]))
 
 (def chimpanzee-feature
@@ -237,7 +238,7 @@
   gr/feature-grmr
 
   ;; ==============================================================================
-  ;; "Old-style"" tag expression grammar
+  ;; "Old-style" tag expression grammar
   ;; ==============================================================================
 
   (gr/old-style-tag-expr-prsr "cat , ~@dog")
@@ -251,5 +252,77 @@
   (gr/old-style-tag-expr-prsr "@cat")
 
   (gr/old-style-tag-expr-prsr "~@cat")
+
+  ;; ==============================================================================
+  ;; Tag Expression Grammar
+  ;; ==============================================================================
+
+  (gr/tag-expression-cli-prsr "@cat")
+
+  (gr/tag-expression-cli-prsr "not @cat")
+
+  (gr/tag-expression-cli-prsr "@smoke and @fast")
+
+  (gr/tag-expression-cli-prsr "@wip and not @slow")
+
+  (gr/tag-expression-cli-prsr "@gui or @database")
+
+  (gr/tag-expression-cli-prsr
+   "not @a or @b and not @c or not @d or @e and @f")
+
+  (= (first (gr/tag-expression-cli-prsr
+             "not @a or @b and not @c or not @d or @e and @f"))
+     [:DISJ
+      [:DISJ
+       [:DISJ
+        [:NEG "a"]
+        [:CONJ "b" [:NEG "c"]]]
+       [:NEG "d"]]
+      [:CONJ "e" "f"]])
+
+  (gr/tag-expression-cli-prsr "not @a or @b")
+
+  (gr/tag-expression-cli-prsr "not @a or @b and not @c")
+
+  (gr/tag-expression-cli-prsr "not @a and @b and @c")
+
+  (gr/tag-expression-cli-prsr "not @a and @b")
+
+  (gr/tag-expression-cli-prsr "not @a")
+
+  ;; WITH PARENS ...
+
+  (gr/tag-expression-cli-prsr "(not @cat)")
+
+  (gr/tag-expression-cli-prsr "(@smoke and @fast)")
+
+  (gr/tag-expression-cli-prsr "@a and @b and @c")
+
+  (= (gr/tag-expression-cli-prsr "@a and @b and @c")
+     (gr/tag-expression-cli-prsr "(@a and @b) and @c"))
+
+  (gr/tag-expression-cli-prsr "@a and (@b and @c)")
+
+  (gr/tag-expression-cli-prsr "(@a and (@b and @c) or @d)")
+
+  (gr/tag-expression-cli-prsr "@wip and not @slow")
+
+  (gr/tag-expression-cli-prsr "@gui or @database")
+
+  (gr/tag-expression-cli-prsr
+   "not @a or @b and not @c or not @d or @e and @f")
+
+  (gr/tag-expression-cli-prsr "not @a or @b")
+
+  (gr/tag-expression-cli-prsr "not @a or @b and not @c")
+
+  (gr/tag-expression-cli-prsr "not @a and @b and @c")
+
+  (gr/tag-expression-cli-prsr "not @a and @b")
+
+  (gr/tag-expression-cli-prsr "not @a")
+
+  (let [a (gr/tag-expression-cli-prsr "@dog")]
+    (insta/failure? a))
 
 )

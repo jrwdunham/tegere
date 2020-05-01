@@ -22,20 +22,24 @@ Takes inspiration from `Python Behave`_.
 Quickstart
 ================================================================================
 
-Add the following line to the `:deps` map of your deps.edn::
+Add the following line to the `:deps` map of your deps.edn:
 
-    tegere
-    {:git/url "https://github.com/jrwdunham/tegere"
-     :sha "0bf666e891165b11073bd24c2a9f2851ee33afe3"}}
+.. code-block:: clojure
+
+       tegere
+       {:git/url "https://github.com/jrwdunham/tegere"
+        :sha "0bf666e891165b11073bd24c2a9f2851ee33afe3"}}
 
 Then write some Gherkin feature files and save them in a directory in files with the
 `.feature` extension. Now map the Gherkin step text to Clojure functions using the
 ``Given``, ``When`` and ``Then`` functions of ``tegere.steps``. Finally, execute
-the features by calling::
+the features by calling:
 
-    user> (tegere.runner/run
-            (tegere.loader/load-feature-files "path/to/gherkin")
-            @tegere.steps/registry)
+.. code-block:: clojure
+
+       user> (tegere.runner/run
+               (tegere.loader/load-feature-files "path/to/gherkin")
+               @tegere.steps/registry)
 
 
 Detailed Usage
@@ -55,43 +59,47 @@ Consider the following simplistic Gherkin feature file at path
         Then he is happy
 
 To parse load this feature file into a Clojure data structure, pass its directory
-path to ``tegere.loader/load-feature-files``::
+path to ``tegere.loader/load-feature-files``:
 
-    user> (require '[tegere.loader :refer [load-feature-files]])
-    user> (def features (load-feature-files "src/apes/features"))
-    user> features
-    (#:tegere.parser{:name "Chimpanzees behave as expected",
-                     :description
-                     "Experimenters want chimpanzee sims to behave correctly.",
-                     :tags ("chimpanzees"),
-                     :scenarios
-                     (#:tegere.parser{:description
-                                      "Chimpanzees behave as expected when ...",
-                                      :tags ("fruit-reactions"),
-                                      :steps
-                                      (#:tegere.parser{:type :given,
-                                                       :text "a chimpanzee"}
-                                       #:tegere.parser{:type :when,
-                                                       :text "I give him a papaya"}
-                                       #:tegere.parser{:type :then,
-                                                       :text "he is happy"})})})
+.. code-block:: clojure
 
-Observe that the loaded feature is a ``::tegere.parser/features`` collection
-of ``::tegere.parser/feature`` maps.
+       user> (require '[tegere.loader :refer [load-feature-files]])
+       user> (def features (load-feature-files "src/apes/features"))
+       user> features
+       (#:tegere.parser{:name "Chimpanzees behave as expected",
+                        :description
+                        "Experimenters want chimpanzee sims to behave correctly.",
+                        :tags ("chimpanzees"),
+                        :scenarios
+                        (#:tegere.parser{:description
+                                         "Chimpanzees behave as expected when ...",
+                                         :tags ("fruit-reactions"),
+                                         :steps
+                                         (#:tegere.parser{:type :given,
+                                                          :text "a chimpanzee"}
+                                          #:tegere.parser{:type :when,
+                                                          :text "I give him a papaya"}
+                                          #:tegere.parser{:type :then,
+                                                          :text "he is happy"})})})
+
+The loaded feature is a ``::tegere.parser/features`` collection of
+``::tegere.parser/feature`` maps.
 
 Now we can use the appropriate step function (``Given``, ``When``, or ``Then``)
 to populate the global steps registry atom that maps regular expressions
-(strings) matching Gherkin Step statements to Clojure functions::
+(strings) matching Gherkin Step statements to Clojure functions:
 
-    user> (require '[tegere.steps :refer [registry Given When Then]])
-    user> (Given "a {animal}" (fn [ctx animal] (assoc ctx :animal animal)))
-    user> (When "I give him a {fruit}" (fn [ctx fruit] (assoc ctx :received fruit)))
-    user> (Then "he is {emotion}"
-                (fn [ctx emotion] (assert (= emotion (get-in ctx [:ape :emotion])))))
-    user> @registry
-    {:given {"a {animal}" #function[user/eval13631/fn--13632]},
-     :when {"I give him a {fruit}" #function[user/eval13641/fn--13642]},
-     :then {"he is {emotion}" #function[user/eval13645/fn--13646]}}
+.. code-block:: clojure
+
+       user> (require '[tegere.steps :refer [registry Given When Then]])
+       user> (Given "a {animal}" (fn [ctx animal] (assoc ctx :animal animal)))
+       user> (When "I give him a {fruit}" (fn [ctx fruit] (assoc ctx :received fruit)))
+       user> (Then "he is {emotion}"
+                   (fn [ctx emotion] (assert (= emotion (get-in ctx [:ape :emotion])))))
+       user> @registry
+       {:given {"a {animal}" #function[user/eval13631/fn--13632]},
+        :when {"I give him a {fruit}" #function[user/eval13641/fn--13642]},
+        :then {"he is {emotion}" #function[user/eval13645/fn--13646]}}
 
 Finally, call ``tegere.runner/run`` to execute the parsed features using the
 populated registry. The third argument to ``run`` is a config map: setting
@@ -99,24 +107,26 @@ populated registry. The third argument to ``run`` is a config map: setting
 first failure. The ``:tags`` key may also contain ``:and-tags`` and/or
 ``:or-tags`` keys, whose values are sets of strings. The scenarios that are
 ultimately run are those that match all of the *and* tags and at least one of the
-*or* tags::
+*or* tags:
 
-    user> (require '[tegere.runner :refer [run]])
-    user> (run features @registry {:stop true :tags {:and-tags #{"chimpanzees"}}})
-    Feature: Chimpanzees behave as expected
-    Experimenters want chimpanzee sims to behave correctly.
+.. code-block:: clojure
 
-    @fruit-reactions
-    Scenario: Chimpanzees behave as expected when offered various foods.
+       user> (require '[tegere.runner :refer [run]])
+       user> (run features @registry {:stop true :tags {:and-tags #{"chimpanzees"}}})
+       Feature: Chimpanzees behave as expected
+       Experimenters want chimpanzee sims to behave correctly.
 
-      Given a chimpanzee (took 0.0s)
-      When I give him a papaya (took 0.0s)
-      Then he is happy (took 0.0s)
-          Assertion error: Assert failed: (= emotion (get-in ctx [:ape :emotion]))
+       @fruit-reactions
+       Scenario: Chimpanzees behave as expected when offered various foods.
 
-    0 features passed, 1 failed
-    0 scenarios passed, 1 failed
-    2 steps passed, 1 failed, 0 untested
+         Given a chimpanzee (took 0.0s)
+         When I give him a papaya (took 0.0s)
+         Then he is happy (took 0.0s)
+             Assertion error: Assert failed: (= emotion (get-in ctx [:ape :emotion]))
+
+       0 features passed, 1 failed
+       0 scenarios passed, 1 failed
+       2 steps passed, 1 failed, 0 untested
 
 Above is shown the text that is written to stdout when this feature is executed.
 The return value of ``run`` is a step execution map detailing how long it took to
@@ -129,21 +139,27 @@ Notes (TODO: edit/process)
 ================================================================================
 
 Run TeGere with the ``clj`` tool against the examples/ directory, which contains
-sample Gherkin feature files and step implementations::
+sample Gherkin feature files and step implementations:
 
-    $ clj -A:run examples/
-    2 features passed, 0 failed
-    4 scenarios passed, 0 failed
-    26 steps passed, 0 failed, 0 untested
+.. code-block:: bash
 
-The same can be accomplished with Leiningen::
+       $ clj -A:run examples/
+       2 features passed, 0 failed
+       4 scenarios passed, 0 failed
+       26 steps passed, 0 failed, 0 untested
 
-    $ lein run examples/
+The same can be accomplished with Leiningen:
 
-Alternatively, build a JAR and run it against examples/::
+.. code-block:: bash
 
-    $ lein uberjar
-    $ java -jar target/uberjar/tegere-0.1.0-SNAPSHOT-standalone.jar examples/
+       $ lein run examples/
+
+Alternatively, build a JAR and run it against examples/:
+
+.. code-block:: bash
+
+       $ lein uberjar
+       $ java -jar target/uberjar/tegere-0.1.0-SNAPSHOT-standalone.jar examples/
 
 Example usage in a Clojure project:
 

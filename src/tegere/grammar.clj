@@ -235,47 +235,47 @@
     (-feature-prsr input)))
 
 ;; ==============================================================================
-;; "Old-style"" tag expression grammar
+;; "Old-style" tag expression grammar
 ;; ==============================================================================
 
-(def tag-cli-grmr
+(def oste-tag-grmr
   (str
    "<TAG> = <[TAG_SYMBOL]> TAG_NAME\n"
    "TAG_SYMBOL = '@'\n"
    "<TAG_NAME> = #'[^\\s@~][^\\s,]*'"))
 
-(def tag-cli-prsr (insta/parser tag-cli-grmr))
+(def oste-tag-prsr (insta/parser oste-tag-grmr))
 
-(def negated-tag-cli-grmr
+(def negated-oste-tag-grmr
   (str
    "NEG = <NEGATION> TAG\n"
    "NEGATION = '~'\n"
-   tag-cli-grmr))
+   oste-tag-grmr))
 
-(def negated-tag-cli-prsr (insta/parser negated-tag-cli-grmr))
+(def negated-oste-tag-prsr (insta/parser negated-oste-tag-grmr))
 
-(def tag-phrase-cli-grmr
+(def oste-tag-phrase-cli-grmr
   (str
    "<TAG_PHRASE> = TAG | NEG\n"
-   tag-cli-grmr
-   negated-tag-cli-grmr))
+   oste-tag-grmr
+   negated-oste-tag-grmr))
 
-(def tag-phrase-cli-prsr (insta/parser tag-phrase-cli-grmr))
+(def oste-tag-phrase-cli-prsr (insta/parser oste-tag-phrase-cli-grmr))
 
-(def disjunction-tags-cli-grmr
+(def disjunction-oste-tags-cli-grmr
   (str
    "DISJ = TAG DISJUNCT+\n"
    "<DISJUNCT> = <WS*> <OR> <WS*> TAG_PHRASE\n"
    "OR = ','\n"
    "WS = #'\\s'\n"
-   tag-phrase-cli-grmr))
+   oste-tag-phrase-cli-grmr))
 
-(def disjunction-tags-cli-prsr (insta/parser disjunction-tags-cli-grmr))
+(def disjunction-oste-tags-cli-prsr (insta/parser disjunction-oste-tags-cli-grmr))
 
 (def old-style-tag-expr-grmr
   (str
    "<OSTE> = DISJ | TAG_PHRASE\n"
-   disjunction-tags-cli-grmr))
+   disjunction-oste-tags-cli-grmr))
 
 (def old-style-tag-expr-prsr
   "This should parse old-style tag expression strings, like '@dog,~@cat', into
@@ -288,3 +288,57 @@
       cat,~@dog,cow,~bunny     => ([:DISJ cat [:NEG dog] cow [:NEG bunny]])
       cat , ~@dog,cow , ~bunny => ([:DISJ cat [:NEG dog] cow [:NEG bunny]])"
   (insta/parser old-style-tag-expr-grmr))
+
+;; ==============================================================================
+;; Tag Expression grammar
+;; ==============================================================================
+;; See https://cucumber.io/docs/cucumber/api/#tag-expressions
+;; and https://github.com/cucumber/cucumber/tree/master/tag-expressions
+
+(def te-tag-cli-grmr
+  (str
+   "<TAG> = <TAG_SYMBOL> TAG_NAME\n"
+   "TAG_SYMBOL = '@'\n"
+   "<TAG_NAME> = #'[^\\s@()][^\\s()]*'"))
+
+(def te-tag-cli-prsr (insta/parser te-tag-cli-grmr))
+
+(def negated-te-tag-cli-grmr
+   (str
+    "NEG = <WS>* <NEGATION> <WS>+ TAG\n"
+    "NEG = <WS>* <NEGATION> <WS>+ TAG | "
+    "<LPAR> <WS>* <NEGATION> <WS>+ TAG <RPAR>\n"
+    "NEGATION = 'not'\n"
+    "WS = #'\\s'\n"
+    "LPAR = '('\n"
+    "RPAR = ')'\n"
+    te-tag-cli-grmr))
+
+(def negated-te-tag-cli-prsr (insta/parser negated-te-tag-cli-grmr))
+
+(def conjoined-te-tag-cli-grmr
+  (str
+   "CONJ = <WS>* ( TAG | NEG | CONJ ) <WS>+ <AND> <WS>+ ( TAG | NEG ) | "
+          "<WS>* ( TAG | NEG | CONJ ) <WS>+ <AND> <WS>+ CONJ | "
+   "<LPAR> <WS>* ( TAG | NEG | CONJ ) <WS>+ <AND> <WS>+ ( TAG | NEG | CONJ ) <RPAR>\n"
+   "AND = 'and'\n"
+   negated-te-tag-cli-grmr))
+
+(def conjoined-te-tag-cli-prsr (insta/parser conjoined-te-tag-cli-grmr))
+
+(def disjoined-te-tag-cli-grmr
+  (str
+   "DISJ = <WS>* ( TAG | NEG | CONJ | DISJ ) <WS>+ <OR> <WS>+ ( TAG | NEG | CONJ ) | "
+          "<WS>* ( TAG | NEG | CONJ | DISJ ) <WS>+ <OR> <WS>+ CONJ | "
+   "<LPAR> <WS>* ( TAG | NEG | CONJ | DISJ ) <WS>+ <OR> <WS>+ ( TAG | NEG | CONJ | DISJ ) <RPAR>\n"
+   "OR = 'or'\n"
+   conjoined-te-tag-cli-grmr))
+
+(def disjoined-te-tag-cli-prsr (insta/parser disjoined-te-tag-cli-grmr))
+
+(def tag-expression-cli-grmr
+  (str
+   "<S> = DISJ | CONJ | NEG | TAG\n"
+   disjoined-te-tag-cli-grmr))
+
+(def tag-expression-cli-prsr (insta/parser tag-expression-cli-grmr))

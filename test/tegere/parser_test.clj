@@ -21,3 +21,33 @@
                 {::sut/type :given ::sut/text "x"}
                 {::sut/type :when ::sut/text "y"}
                 {::sut/type :then ::sut/text "z"}))))))
+
+(t/deftest tag-expressions-parsed-to-query-trees-correctly
+  (t/testing "Tag expressions are parsed to query trees correctly"
+    (let [expectations
+          [["@dog" "dog"]
+           ["not @cat" '(not "cat")]
+           ["@smoke and @fast" '(and "smoke" "fast")]
+           ["@wip and not @slow" '(and "wip" (not "slow"))]
+           ["@gui or @database" '(or "gui" "database")]
+           ["not @a or @b and not @c or not @d or @e and @f"
+            '(or (or (or (not "a") (and "b" (not "c"))) (not "d")) (and "e" "f"))]
+           ["not @a or @b" '(or (not "a") "b")]
+           ["not @a or @b and not @c" '(or (not "a") (and "b" (not "c")))]
+           ["not @a and @b and @c" '(and (and (not "a") "b") "c")]
+           ["(not @cat)" '(not "cat")]
+           ["(@smoke and @fast)" '(and "smoke" "fast")]
+           ["@a and @b and @c" '(and (and "a" "b") "c")]
+           ["(@a and @b) and @c" '(and (and "a" "b") "c")]
+           ["@a and (@b and @c)" '(and "a" (and "b" "c"))]
+           ["(@a and (@b and @c) or @d)" '(or (and "a" (and "b" "c")) "d")]
+           ["not @a or @b" '(or (not "a") "b")]
+           ;; Old-Style Tag Expressions parsed as fallback
+           ["dog" "dog"]
+           ["~@dog" '(not "dog")]
+           ["cat , ~@dog" '(or "cat" (not "dog"))]
+           ["cat , ~@dog,cow     ,   ~bunny"
+            '(or "cat" (not "dog") "cow" (not "bunny"))]
+           ["cat,~@dog,cow,~bunny" '(or "cat" (not "dog") "cow" (not "bunny"))]]]
+      (doseq [[input expectation] expectations]
+        (t/is (= (sut/parse-tag-expression-with-fallback input) expectation))))))

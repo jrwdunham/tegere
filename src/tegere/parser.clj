@@ -5,6 +5,7 @@
   their examples tables."
   (:require [clojure.string :as str]
             [clojure.spec.alpha :as s]
+            [instaparse.core :refer [failure?]]
             [tegere.grammar :as grammar]
             #_[tegere.utils :as u]))
 
@@ -309,21 +310,33 @@
        {:error :invalid-feature
         :data (s/explain-data ::feature feature)}))))
 
-(defn post-process-oste
-  [parsed-oste]
-  (if (string? parsed-oste)
-    parsed-oste
-    (let [root (first parsed-oste)]
+(defn post-process-te
+  [parsed-te]
+  (if (string? parsed-te)
+    parsed-te
+    (let [root (first parsed-te)]
       (if (= root :NEG)
-        (list 'not (post-process-oste (second parsed-oste)))
-        (conj (map post-process-oste (rest parsed-oste)) 'or)))))
+        (list 'not (post-process-te (second parsed-te)))
+        (conj (map post-process-te (rest parsed-te))
+              (get {:CONJ 'and :DISJ 'or} root))))))
 
-(defn parse-old-style-tag-expression
+(defn parse-tag-expression-with
+  [parser te]
+  (let [parse (parser te)]
+    (when-not (failure? parse)
+      (-> parse first post-process-te))))
+
+(def parse-old-style-tag-expression
   "Given an old-style tag expression like 'cat,~@dog,cow,~bunny', parse it into a
   disjunction like ``(or cat (not dog) cow (not bunny))``."
-  [oste]
-  (-> oste
-      grammar/old-style-tag-expr-prsr
-      first
-      post-process-oste))
+  (partial parse-tag-expression-with grammar/old-style-tag-expr-prsr))
 
+(def parse-tag-expression
+  "Given a tag expression like '@wip and not @slow' parse it into an unambiguous
+  ``:tegere.query/query-tree`` list like ``(and wip (not slow))``."
+  (partial parse-tag-expression-with grammar/tag-expression-cli-prsr))
+
+(defn parse-tag-expression-with-fallback
+  [te]
+  (or (parse-tag-expression te)
+      (parse-old-style-tag-expression te)))
