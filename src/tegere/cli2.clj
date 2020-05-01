@@ -3,7 +3,10 @@
             [clojure.tools.cli :as cli]
             [clojure.set :as set]
             [me.raynes.fs :as fs]
-            [tegere.runner :as r]))
+            [tegere.grammar :refer [old-style-tag-expr-prsr]]
+            [tegere.parser :as p]
+            [tegere.runner :as r]
+            [tegere.query :as q]))
 
 (defn- update-with-merge [opts id val]
   (update opts id merge val))
@@ -24,14 +27,30 @@
    set/union
    val))
 
+(defn conjoin-tag-expression
+  "Conjoin ``val`` to existing ``::q/query-tree`` at ``id`` of ``opts`` using
+  ``'and``."
+  [opts id val]
+  (assoc opts id
+         (if-let [existing-query-tree (id opts)]
+           (list 'and val existing-query-tree)
+           val)))
+
+(defn parse-tag-expression
+  [tag-expr]
+  (p/parse-old-style-tag-expression tag-expr))
+
 (def cli-options
   [["-h" "--help" :id ::r/help]
    ["-s" "--stop" :default false :id ::r/stop]
    ["-v" "--verbose" :default false :id ::r/verbose]
+
+   ;; Transform --tags values into a ::q/query-try for datascript-based query.
    ["-t" "--tags TAGS" "Tags to control which features are executed"
-    :assoc-fn process-tags-directive
-    :parse-fn setify-with-comma-split
-    :id ::r/tags]
+    :assoc-fn conjoin-tag-expression
+    :parse-fn parse-tag-expression
+    :id ::q/query-tree]
+
    ["-D" "--data KEYVAL" "Data in key=val format to pass to Apes Gherkin"
     :assoc-fn update-with-merge
     :parse-fn parse-data
@@ -112,5 +131,17 @@
    ["examples/apes/src/apes/features" "-Durl=http://www.url.com"
     "-Dpassword=1234" "--stop" "--tags=dogs" "--tags=chimpanzees"
     "--tags=apple,orange,papaya" "--tags=apple,orange,banana"])
+
+  (old-style-tag-expr-prsr "cat,~@dog,cow,~bunny")
+
+  (= '(and (not "ant")
+           (and "rat"
+                (or "cat" (not "dog") "cow" (not "bunny"))))
+     (-> (validate-args ["examples/apes/src/apes/features"
+                         "--tags=cat,~@dog,cow,~bunny"
+                         "--tags=rat"
+                         "--tags=~@ant"
+                         ])
+         ::q/query-tree))
 
 )

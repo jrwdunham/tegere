@@ -308,3 +308,22 @@
       (u/nothing
        {:error :invalid-feature
         :data (s/explain-data ::feature feature)}))))
+
+(defn post-process-oste
+  [parsed-oste]
+  (if (string? parsed-oste)
+    parsed-oste
+    (let [root (first parsed-oste)]
+      (if (= root :NEG)
+        (list 'not (post-process-oste (second parsed-oste)))
+        (conj (map post-process-oste (rest parsed-oste)) 'or)))))
+
+(defn parse-old-style-tag-expression
+  "Given an old-style tag expression like 'cat,~@dog,cow,~bunny', parse it into a
+  disjunction like ``(or cat (not dog) cow (not bunny))``."
+  [oste]
+  (-> oste
+      grammar/old-style-tag-expr-prsr
+      first
+      post-process-oste))
+

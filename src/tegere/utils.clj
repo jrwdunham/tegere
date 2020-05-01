@@ -94,3 +94,10 @@
    (if error
      (nothing (nothing-fn error))
      (just (then-fn val)))))
+
+(defn extract-all-scenario-tags
+  [features]
+  (mapcat
+   (fn [f]
+     (->> f :tegere.parser/scenarios (map :tegere.query/tags)))
+   features))

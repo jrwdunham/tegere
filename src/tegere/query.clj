@@ -103,9 +103,11 @@
                :where
                [?feat-idx :tegere.parser/scenarios ?scen-idx]]
         where-clauses (user-query->where-clause user-query)]
-    (if (symbol? (first where-clauses))
-      (conj base where-clauses)
-      (vec (concat base where-clauses)))))
+    (if user-query
+      (if (symbol? (first where-clauses))
+        (conj base where-clauses)
+        (vec (concat base where-clauses)))
+      base)))
 
 (defn- ->map-indices
   [indices]
@@ -120,12 +122,11 @@
 (defn filter-features [features indices]
   (let [indices (->map-indices indices)]
     (->> features
-         (keep-indexed (fn [idx f] (when (get indices idx) f)))
          (map-indexed
           (fn [idx f]
-            (update f :tegere.parser/scenarios filter-scenarios
-                    (get indices idx))))
-         vec)))
+            (when-let [s-idcs (get indices idx)]
+              (update f :tegere.parser/scenarios filter-scenarios s-idcs))))
+         (filterv some?))))
 
 (defn query
   "Query the features data structure (conformant to ``:tegere.parser/features``)
