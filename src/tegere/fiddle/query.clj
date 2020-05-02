@@ -19,10 +19,45 @@
                   features))
         where
         '(and
-          (or "chimpanzees" "orangutan")
-          (not "response=sad"))]
+          (or "chimpanzees" "bonobos")
+          (or "fruit=banana" "fruit=pear"))]
     (->> (query/query features where)
-         #_extract-all-scenario-tags))
+         extract-all-scenario-tags))
+
+  (query/user-query->datalog-query
+   "a")
+
+  (query/user-query->datalog-query
+   '(and
+     (or "chimpanzees" "bonobos")
+     (or "fruit=banana" "fruit=pear")))
+
+  (query/user-query->datalog-query
+   '(not "a"))
+
+  (query/user-query->datalog-query
+   '(and "a" "b"))
+
+  (query/user-query->datalog-query
+   '(or "a" "b"))
+
+  (query/user-query->datalog-query
+   '(and
+     (and "a" "b")
+     (and "c" "d")))
+
+  (query/user-query->datalog-query
+   '(and
+     (and
+      (and "a" "b")
+      (or "e" "f"))
+     (or "c" "d")))
+
+  (query/user-query->datalog-query
+   '(and "a" "b"))
+
+  (query/user-query->datalog-query
+   '(or "a" "b"))
 
   ;; This should evaluate to true, showing the equivalence of the all
   ;; ``:tegere.query/query-tree`` and the old-style query expressions in each

@@ -5,7 +5,8 @@
   (:require [alandipert.intension :refer [make-db]]
             [clojure.set :as set]
             [clojure.spec.alpha :as s]
-            [datascript.core :refer [q]]))
+            [datascript.core :refer [q]]
+            [clojure.pprint :as pprint]))
 
 (s/def ::tag string?)
 (s/def ::tags (s/coll-of ::tag))
@@ -76,22 +77,26 @@
    features
    (get-all-scenario-tags features)))
 
-(defn user-query->where-clause
-  "Given ``::query-tree`` ``user-query``, return one or more datalog where
-  clauses. If the user query is a conjunction ('and) at the top level, then the
-  return value is a list of vector coordinands. If the user query is a
-  disjunction ('or) or negation ('not), the return value is a list whose first
-  element is that symbol. Otherwise, the return value is a vector."
-  ([user-query] (user-query->where-clause user-query false))
-  ([user-query keep-and?]
-   (if (coll? user-query)
-     (let [first-sym (symbol (name (first user-query)))
-           branches (map (fn [p] (user-query->where-clause p true))
-                         (rest user-query))]
-       (if (or keep-and? (not= 'and first-sym))
-         (conj branches first-sym)
-         branches))
-     ['?feat-idx '_ '?scen-idx :tegere.query/tags '_ user-query])))
+(defn get-datalog-boolean-tree
+  [user-query]
+  (if (coll? user-query)
+    (conj (map get-datalog-boolean-tree (rest user-query))
+          (symbol (name (first user-query))))
+    ['?feat-idx '_ '?scen-idx :tegere.query/tags '_ user-query]))
+
+(defn remove-top-level-conjunctions
+  [datalog-boolean-tree]
+  (if (= 'and (first datalog-boolean-tree))
+    (mapcat remove-top-level-conjunctions (rest datalog-boolean-tree))
+    [datalog-boolean-tree]))
+
+(defn user-query->where-clauses
+  "Given ``::query-tree`` ``user-query``, return a sequence of datalog 'where'
+  clauses. Remove all top-level 'and' lists of all clauses."
+  [user-query]
+  (-> user-query
+      get-datalog-boolean-tree
+      remove-top-level-conjunctions))
 
 (defn user-query->datalog-query
   "Given a user query conformant to ``::query-tree`` (e.g.,
@@ -102,24 +107,37 @@
   (let [base '[:find ?feat-idx ?scen-idx
                :where
                [?feat-idx :tegere.parser/scenarios ?scen-idx]]
-        where-clauses (user-query->where-clause user-query)]
+        where-clauses (user-query->where-clauses user-query)]
     (if user-query
-      (if (symbol? (first where-clauses))
-        (conj base where-clauses)
-        (vec (concat base where-clauses)))
+      (vec (concat base where-clauses))
       base)))
 
 (defn- ->map-indices
+  "Convert a sequence of 2-ary [feature-idx scenario-idx] vectors to a map from
+  feature indices to vectors of scenario indices. Example:
+
+      user> (->map-indices [[0 1] [0 2] [1 1] [1 45] [2 0]])
+      {0 [1 2], 1 [1 45], 2 [0]}
+  "
   [indices]
   (->> indices
        (group-by first)
        (map (fn [[f-idx s-idxs]] [f-idx (mapv second s-idxs)]))
        (into {})))
 
-(defn filter-scenarios [scenarios indices]
-  (->> scenarios (keep-indexed (fn [idx s] (when (some #{idx} indices) s))) vec))
+(defn filter-scenarios
+  "Return the sub-collection of ``scenarios`` whose positional indices match any
+  of the indices in ``indices``."
+  [scenarios indices]
+  (->> scenarios
+       (keep-indexed (fn [idx s] (when (some #{idx} indices) s)))
+       vec))
 
-(defn filter-features [features indices]
+(defn filter-features
+  "Return a substructure of ``features`` that matches the sequence of
+  [feature-idx scenario-idx] in ``indices``. The input and output features
+  collection conforms to ``:tegere.parser/features``."
+  [features indices]
   (let [indices (->map-indices indices)]
     (->> features
          (map-indexed

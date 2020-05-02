@@ -34,7 +34,7 @@
             '(or (or (or (not "a") (and "b" (not "c"))) (not "d")) (and "e" "f"))]
            ["not @a or @b" '(or (not "a") "b")]
            ["not @a or @b and not @c" '(or (not "a") (and "b" (not "c")))]
-           ["not @a and @b and @c" '(and (and (not "a") "b") "c")]
+           ["not @a and @b and @c" '(and (not "a") (and "b" "c"))]
            ["(not @cat)" '(not "cat")]
            ["(@smoke and @fast)" '(and "smoke" "fast")]
            ["@a and @b and @c" '(and (and "a" "b") "c")]

@@ -292,65 +292,31 @@
 ;; ==============================================================================
 ;; Tag Expression grammar
 ;; ==============================================================================
+
 ;; See https://cucumber.io/docs/cucumber/api/#tag-expressions
 ;; and https://github.com/cucumber/cucumber/tree/master/tag-expressions
 
-(def te-tag-cli-grmr
-  (str
-   "<TAG> = <TAG_SYMBOL> TAG_NAME\n"
-   "TAG_SYMBOL = '@'\n"
-   "<TAG_NAME> = #'[^\\s@()][^\\s()]*'"))
-
-(def te-tag-cli-prsr (insta/parser te-tag-cli-grmr))
-
-(def negated-te-tag-cli-grmr
-   (str
-    "NEG = <WS>* <NEGATION> <WS>+ TAG\n"
-    "NEG = <WS>* <NEGATION> <WS>+ TAG | "
-    "<LPAR> <WS>* <NEGATION> <WS>+ TAG <RPAR>\n"
-    "NEGATION = 'not'\n"
-    "WS = #'\\s'\n"
-    "LPAR = '('\n"
-    "RPAR = ')'\n"
-    te-tag-cli-grmr))
-
-(def negated-te-tag-cli-prsr (insta/parser negated-te-tag-cli-grmr))
-
-(def conjoined-te-tag-cli-grmr
-  (str
-   "CONJ = <WS>* ( TAG | NEG | CONJ ) <WS>+ <AND> <WS>+ ( TAG | NEG ) | "
-          "<WS>* ( TAG | NEG | CONJ ) <WS>+ <AND> <WS>+ CONJ | "
-   "<LPAR> <WS>* ( TAG | NEG | CONJ ) <WS>+ <AND> <WS>+ ( TAG | NEG | CONJ ) <RPAR>\n"
-   "AND = 'and'\n"
-   negated-te-tag-cli-grmr))
-
-(def conjoined-te-tag-cli-prsr (insta/parser conjoined-te-tag-cli-grmr))
-
-(def disjoined-te-tag-cli-grmr
-  (str
-   "DISJ = <WS>* ( TAG | NEG | CONJ | DISJ ) <WS>+ <OR> <WS>+ ( TAG | NEG | CONJ ) | "
-          "<WS>* ( TAG | NEG | CONJ | DISJ ) <WS>+ <OR> <WS>+ CONJ | "
-   "<LPAR> <WS>* ( TAG | NEG | CONJ | DISJ ) <WS>+ <OR> <WS>+ ( TAG | NEG | CONJ | DISJ ) <RPAR>\n"
-   "OR = 'or'\n"
-   conjoined-te-tag-cli-grmr))
-
-(def disjoined-te-tag-cli-prsr (insta/parser disjoined-te-tag-cli-grmr))
-
-(def tag-expression-cli-grmr-DEPRECATED?
-  (str
-   "<S> = DISJ | CONJ | NEG | TAG\n"
-   disjoined-te-tag-cli-grmr))
-
 (def tag-expression-cli-grmr
+  "This grammar uses the PEG extensions of Instaparse in order to simulate the
+  Shunting-yard algorithm. It will parse ambiguous boolean grammars such that
+  (minimally) the example at
+  https://github.com/cucumber/cucumber/tree/master/tag-expressions is correct::
+
+      (= (parser/parse-tag-expression-with-fallback
+           not @a or @b and not @c or not @d or @e and @f)
+      '(or (or (or (not a) (and b (not c))) (not d)) (and e f)))
+
+  This is accomplished via strategic use of the 'ordered choice' operator '/'."
   (str
-   "<S> = DISJ / TAG / NEG / CONJ\n"
-   "<X> = TAG / NEG / CONJ / DISJ\n"
+   "<S> = DISJ / ( TAG | NEG | CONJ )\n"
+   "<X> = NEG / ( TAG | CONJ ) / DISJ\n"
+   "<Y> = TAG / ( NEG | CONJ | DISJ )\n"
    "DISJ =        <WS>* S <WS>+ <OR> <WS>+ X | "
    "       <LPAR> <WS>* S <WS>+ <OR> <WS>+ X <RPAR>\n"
    "CONJ =        <WS>* X <WS>+ <AND> <WS>+ X | "
    "       <LPAR> <WS>* X <WS>+ <AND> <WS>+ X <RPAR>\n"
-   "NEG =        <WS>* <NOT> <WS>+ X | "
-   "      <LPAR> <WS>* <NOT> <WS>+ X <RPAR>\n"
+   "NEG =        <WS>* <NOT> <WS>+ Y | "
+   "      <LPAR> <WS>* <NOT> <WS>+ Y <RPAR>\n"
    "<TAG> = <TAG_SYMBOL> TAG_NAME\n"
    "TAG_SYMBOL = '@'\n"
    "<TAG_NAME> = #'[^\\s@()][^\\s()]*'"
