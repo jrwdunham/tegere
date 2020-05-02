@@ -336,9 +336,41 @@
 
 (def disjoined-te-tag-cli-prsr (insta/parser disjoined-te-tag-cli-grmr))
 
-(def tag-expression-cli-grmr
+(def tag-expression-cli-grmr-DEPRECATED?
   (str
    "<S> = DISJ | CONJ | NEG | TAG\n"
    disjoined-te-tag-cli-grmr))
 
+(def tag-expression-cli-grmr
+  (str
+   "<S> = DISJ / TAG / NEG / CONJ\n"
+   "<X> = TAG / NEG / CONJ / DISJ\n"
+   "DISJ =        <WS>* S <WS>+ <OR> <WS>+ X | "
+   "       <LPAR> <WS>* S <WS>+ <OR> <WS>+ X <RPAR>\n"
+   "CONJ =        <WS>* X <WS>+ <AND> <WS>+ X | "
+   "       <LPAR> <WS>* X <WS>+ <AND> <WS>+ X <RPAR>\n"
+   "NEG =        <WS>* <NOT> <WS>+ X | "
+   "      <LPAR> <WS>* <NOT> <WS>+ X <RPAR>\n"
+   "<TAG> = <TAG_SYMBOL> TAG_NAME\n"
+   "TAG_SYMBOL = '@'\n"
+   "<TAG_NAME> = #'[^\\s@()][^\\s()]*'"
+   "OR = 'or'\n"
+   "AND = 'and'\n"
+   "NOT = 'not'\n"
+   "WS = #'\\s'\n"
+   "LPAR = '('\n"
+   "RPAR = ')'\n"))
+
 (def tag-expression-cli-prsr (insta/parser tag-expression-cli-grmr))
+
+(comment
+
+  (insta/parse
+   tag-expression-cli-prsr
+   "@a and @b")
+
+  (insta/parses
+   tag-expression-cli-prsr
+   "not @a or @b and not @c or not @d or @e and @f")
+
+)

@@ -708,6 +708,9 @@
 (comment
 
   (parser/parse-tag-expression-with-fallback
+   "not @a or @b and not @c or not @d or @e and @f")
+
+  (parser/parse-tag-expression-with-fallback
    "(@chimpanzees and @orangutan) and (@chimpanzees or @orangutan)")
 
   (parser/parse-tag-expression-with-fallback
