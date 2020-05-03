@@ -30,10 +30,10 @@ Add the following line to the `:deps` map of your deps.edn:
        {:git/url "https://github.com/jrwdunham/tegere"
         :sha "0bf666e891165b11073bd24c2a9f2851ee33afe3"}}
 
-Then write some Gherkin feature files and save them in a directory in files with the
-`.feature` extension. Now map the Gherkin step text to Clojure functions using the
-``Given``, ``When`` and ``Then`` functions of ``tegere.steps``. Finally, execute
-the features by calling:
+Then write some Gherkin_ feature files and save them (with the `.feature`
+extension) to some directory. Now map the Gherkin step text to Clojure functions
+using the ``Given``, ``When`` and ``Then`` functions of ``tegere.steps``.
+Finally, execute the features by calling:
 
 .. code-block:: clojure
 
@@ -41,12 +41,31 @@ the features by calling:
                (tegere.loader/load-feature-files "path/to/gherkin")
                @tegere.steps/registry)
 
+An optional config map may be passed to ``run`` as a third argument. It
+recognizes the boolean key ``tegere.runner/stop`` which will cause TeGere to stop
+feature execution after the first failure, and ``:tegere.query/query-tree`` which
+is a boolean search tree (see the spec) that controls which scenarios get
+executed::
+
+.. code-block:: clojure
+
+       user> (tegere.runner/run
+               (tegere.loader/load-feature-files "path/to/gherkin")
+               @tegere.steps/registry
+               {:tegere.runner/stop true
+                :tegere.query/query-tree
+                '(or (and "chimpanzees" (not "fruit-reactions"))
+                     "bonobos")})
+
+For additional documentation, see the :ref:`Detailed Usage` section or the
+example Apes_ project under the `examples`/ folder.
+
 
 Detailed Usage
 ================================================================================
 
-Consider the following simplistic Gherkin feature file at path
-`src/apes/features/chimpanzees.feature`::
+Consider the simplistic Gherkin feature files under
+`examples/chimps/chimps.feature`::
 
     @chimpanzees
     Feature: Chimpanzees behave as expected
@@ -58,29 +77,29 @@ Consider the following simplistic Gherkin feature file at path
         When I give him a papaya
         Then he is happy
 
-To parse load this feature file into a Clojure data structure, pass its directory
-path to ``tegere.loader/load-feature-files``:
+To parse and load this feature file into a Clojure data structure, pass its
+directory path to ``tegere.loader/load-feature-files``:
 
 .. code-block:: clojure
 
        user> (require '[tegere.loader :refer [load-feature-files]])
-       user> (def features (load-feature-files "src/apes/features"))
+       user> (def features (load-feature-files "examples/chimps"))
        user> features
-       (#:tegere.parser{:name "Chimpanzees behave as expected",
+       [#:tegere.parser{:name "Chimpanzees behave as expected",
                         :description
                         "Experimenters want chimpanzee sims to behave correctly.",
-                        :tags ("chimpanzees"),
+                        :tags ["chimpanzees"],
                         :scenarios
-                        (#:tegere.parser{:description
+                        [#:tegere.parser{:description
                                          "Chimpanzees behave as expected when ...",
-                                         :tags ("fruit-reactions"),
+                                         :tags ["fruit-reactions"],
                                          :steps
-                                         (#:tegere.parser{:type :given,
+                                         [#:tegere.parser{:type :given,
                                                           :text "a chimpanzee"}
                                           #:tegere.parser{:type :when,
                                                           :text "I give him a papaya"}
                                           #:tegere.parser{:type :then,
-                                                          :text "he is happy"})})})
+                                                          :text "he is happy"}]}]}]
 
 The loaded feature is a ``::tegere.parser/features`` collection of
 ``::tegere.parser/feature`` maps.
@@ -93,16 +112,23 @@ to populate the global steps registry atom that maps regular expressions
 
        user> (require '[tegere.steps :refer [registry Given When Then]])
        user> (Given "a {animal}" (fn [ctx animal] (assoc ctx :animal animal)))
-       user> (When "I give him a {fruit}" (fn [ctx fruit] (assoc ctx :received fruit)))
+       user> (When "I give him a {fruit}"
+                   (fn [ctx fruit]
+                     (merge ctx
+                            {:received fruit
+                             :emotion (if (= fruit "pear") "happy" "sad")})))
        user> (Then "he is {emotion}"
-                   (fn [ctx emotion] (assert (= emotion (get-in ctx [:ape :emotion])))))
+                   (fn [{actual-emotion :emotion :as ctx} emotion]
+                     (assert (= emotion actual-emotion)
+                             (format "Ape is %s, expected her to be %s."
+                                     actual-emotion emotion))))
        user> @registry
        {:given {"a {animal}" #function[user/eval13631/fn--13632]},
         :when {"I give him a {fruit}" #function[user/eval13641/fn--13642]},
         :then {"he is {emotion}" #function[user/eval13645/fn--13646]}}
 
 Finally, call ``tegere.runner/run`` to execute the parsed features using the
-populated registry. The third argument to ``run`` is a config map: setting
+populated registry. The optional third argument to ``run`` is a config map: setting
 ``:stop`` on this map to ``true`` will cause test execution to halt after the
 first failure. The ``:tags`` key may also contain ``:and-tags`` and/or
 ``:or-tags`` keys, whose values are sets of strings. The scenarios that are
@@ -112,17 +138,19 @@ ultimately run are those that match all of the *and* tags and at least one of th
 .. code-block:: clojure
 
        user> (require '[tegere.runner :refer [run]])
-       user> (run features @registry {:stop true :tags {:and-tags #{"chimpanzees"}}})
+       user> (run features @registry)
+       @chimpanzees
        Feature: Chimpanzees behave as expected
-       Experimenters want chimpanzee sims to behave correctly.
+         Experimenters want chimpanzee sims to behave correctly.
 
-       @fruit-reactions
-       Scenario: Chimpanzees behave as expected when offered various foods.
+         @fruit-reactions
+         Scenario: Chimpanzees behave as expected when offered various foods.
 
-         Given a chimpanzee (took 0.0s)
-         When I give him a papaya (took 0.0s)
-         Then he is happy (took 0.0s)
-             Assertion error: Assert failed: (= emotion (get-in ctx [:ape :emotion]))
+           Given a chimpanzee (took 0.0s)
+           When I give him a papaya (took 0.0s)
+           Then he is happy (took 0.001s)
+               Assertion error: Assert failed: Ape is sad, expected her to be happy.
+                   (= emotion actual-emotion)
 
        0 features passed, 1 failed
        0 scenarios passed, 1 failed
@@ -222,3 +250,5 @@ at https://www.gnu.org/software/classpath/license.html.
 .. _`cucumber-jvm`: https://github.com/cucumber/cucumber-jvm
 .. _`Python Behave`: https://github.com/behave/behave
 .. _Instaparse: https://github.com/Engelberg/instaparse
+.. _Gherkin: https://cucumber.io/docs/gherkin/reference/
+.. _Apes: examples/apes/README.rst
