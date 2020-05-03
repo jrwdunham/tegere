@@ -45,7 +45,7 @@ An optional config map may be passed to ``run`` as a third argument. It
 recognizes the boolean key ``tegere.runner/stop`` which will cause TeGere to stop
 feature execution after the first failure, and ``:tegere.query/query-tree`` which
 is a boolean search tree (see the spec) that controls which scenarios get
-executed::
+executed:
 
 .. code-block:: clojure
 
@@ -57,12 +57,16 @@ executed::
                 '(or (and "chimpanzees" (not "fruit-reactions"))
                      "bonobos")})
 
-For additional documentation, see the :ref:`Detailed Usage` section or the
+For additional documentation, see the `Detailed Usage` section below or the
 example Apes_ project under the `examples`/ folder.
 
 
 Detailed Usage
 ================================================================================
+
+
+Create and Load Gherkin Files
+--------------------------------------------------------------------------------
 
 Consider the simplistic Gherkin feature files under
 `examples/chimps/chimps.feature`::
@@ -104,6 +108,10 @@ directory path to ``tegere.loader/load-feature-files``:
 The loaded feature is a ``::tegere.parser/features`` collection of
 ``::tegere.parser/feature`` maps.
 
+
+Map Gherkin Step Definitions to Clojure Step Functions
+--------------------------------------------------------------------------------
+
 Now we can use the appropriate step function (``Given``, ``When``, or ``Then``)
 to populate the global steps registry atom that maps regular expressions
 (strings) matching Gherkin Step statements to Clojure functions:
@@ -127,13 +135,12 @@ to populate the global steps registry atom that maps regular expressions
         :when {"I give him a {fruit}" #function[user/eval13641/fn--13642]},
         :then {"he is {emotion}" #function[user/eval13645/fn--13646]}}
 
+
+Run the Features from the REPL
+--------------------------------------------------------------------------------
+
 Finally, call ``tegere.runner/run`` to execute the parsed features using the
-populated registry. The optional third argument to ``run`` is a config map: setting
-``:stop`` on this map to ``true`` will cause test execution to halt after the
-first failure. The ``:tags`` key may also contain ``:and-tags`` and/or
-``:or-tags`` keys, whose values are sets of strings. The scenarios that are
-ultimately run are those that match all of the *and* tags and at least one of the
-*or* tags:
+populated registry:
 
 .. code-block:: clojure
 
@@ -160,73 +167,66 @@ Above is shown the text that is written to stdout when this feature is executed.
 The return value of ``run`` is a step execution map detailing how long it took to
 execute each step and whether the step passed or failed.
 
-TODO: document the ``tegere.cli`` namespace, once it is complete.
+An optional third argument---a configuration map---may be passed to ``run``.
+Setting the boolean key ``tegere.runner/stop`` to ``true`` will cause TeGere to
+stop feature execution after the first failure. The value of
+``:tegere.query/query-tree`` may be a boolean search tree (see the spec) that
+controls which scenarios get executed:
 
 
-Notes (TODO: edit/process)
-================================================================================
+Create a Command-line Interface
+--------------------------------------------------------------------------------
 
-Run TeGere with the ``clj`` tool against the examples/ directory, which contains
-sample Gherkin feature files and step implementations:
-
-.. code-block:: bash
-
-       $ clj -A:run examples/
-       2 features passed, 0 failed
-       4 scenarios passed, 0 failed
-       26 steps passed, 0 failed, 0 untested
-
-The same can be accomplished with Leiningen:
-
-.. code-block:: bash
-
-       $ lein run examples/
-
-Alternatively, build a JAR and run it against examples/:
-
-.. code-block:: bash
-
-       $ lein uberjar
-       $ java -jar target/uberjar/tegere-0.1.0-SNAPSHOT-standalone.jar examples/
-
-Example usage in a Clojure project:
+The ``tegere.cli2`` namespaces contains ``validate-args`` function that can be
+used to create a command-line interface to a TeGere feature runner. For example:
 
 .. code-block:: clojure
 
-       (ns example.core
-         (:require [tegere.cli :as tegcli]
-                   [tegere.loader :as tegload]
-                   [tegere.runner :as tegrun]
-                   [tegere.steps :as tegstep]
-                   [example.steps.core]))  ;; should register step functions
+       (cli2/validate-args
+         ["src/apes/features"
+          "--tags=@bonobos or @chimpanzees"
+          "--tags=not @orangutan"
+          "-Durl=http://api.example.com"
+          "--data=password=secret"
+          "--stop"
+          "--verbose"])
+       {:tegere.runner/stop true,
+        :tegere.runner/verbose true,
+        :tegere.runner/data {:url "http://api.example.com", :password "secret"},
+        :tegere.query/query-tree (and (not "orangutan") (or "bonobos" "chimpanzees")),
+        :tegere.runner/features-path "src/apes/features"}
 
-       (defn main
-         [args]
-         (let [cli-args (tegcli/simple-cli-parser args)
-               config {:tags (select-keys (:kwargs cli-args) [:and-tags :or-tags])
-                       :stop (get-in cli-args [:kwargs :stop] false)}
-               features (tegload/load-feature-files (-> cli-args :args first))]
-           (tegrun/run features @tegstep/registry config)))
+In the apes example application, the above allows us to run the features from the
+command-line using the ``clj`` tool and a command like the following:
 
-       (defn -main
-         [& args]
-         (println (main args)))
+.. code-block:: bash
+
+       $ clj -m apes.core src/apes/features/ \
+             --tags='@chimpanzees & @fruit=banana or @bonobos and @orangutan'
+
+See the ``apes.core`` namespace in the ``apes`` examples app for more details.
 
 
 Run the Tests
 ================================================================================
 
-Use the ``test`` alias defined in ``deps.edn``::
+Use the ``test`` alias defined in ``deps.edn``:
 
-    $ clj -A:test
+.. code-block:: bash
 
-To run tests specific to a single namespace, e.g., ``tegere.grammar``::
+       $ clj -A:test
 
-    $ clj -A:test -n tegere.grammar-test
+To run tests specific to a single namespace, e.g., ``tegere.grammar``:
 
-To run a specific ``deftest``::
+.. code-block:: bash
 
-    $ clj -A:test -n tegere.runner-test -v tegere.runner-test/can-run-simple-feature-test
+       $ clj -A:test -n tegere.grammar-test
+
+To run a specific ``deftest``:
+
+.. code-block:: bash
+
+       $ clj -A:test -n tegere.runner-test -v tegere.runner-test/can-run-simple-feature-test
 
 
 License

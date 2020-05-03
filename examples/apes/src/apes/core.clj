@@ -50,6 +50,15 @@
   (binding [*exit?* false]
     (-main "path"))
 
+  (cli/validate-args
+   ["src/apes/features"
+    "--tags=@bonobos or @chimpanzees"
+    "--tags=not @orangutan"
+    "-Durl=http://api.example.com"
+    "--data=password=secret"
+    "--stop"
+    "--verbose"])
+
   (binding [*exit?* false]
     (-main
      "src/apes/features"
