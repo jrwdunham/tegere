@@ -25,16 +25,14 @@
            val)))
 
 (def cli-options
-  [["-h" "--help" :id ::r/help]
+  [["-h" "--help"]
    ["-s" "--stop" :default false :id ::r/stop]
    ["-v" "--verbose" :default false :id ::r/verbose]
-
    ;; Transform --tags values into a ::q/query-try for datascript-based query.
    ["-t" "--tags TAGS" "Tags to control which features are executed"
     :assoc-fn conjoin-tag-expression
     :parse-fn p/parse-tag-expression-with-fallback
     :id ::q/query-tree]
-
    ["-D" "--data KEYVAL" "Data in key=val format to pass to Apes Gherkin"
     :assoc-fn update-with-merge
     :parse-fn parse-data
@@ -70,23 +68,29 @@
   "Validate command line arguments. Either return a map indicating the program
   should exit (with a error message, and optional ok status), or a
   ``:tegere.runner/config``config map."
-  [args]
-  (let [{:keys [options arguments errors summary]} (cli/parse-opts args cli-options)]
-    (cond
-      (:help options) ; help => exit OK with usage summary
-      {:exit-message (usage summary) :ok? true}
-      errors ; errors => exit with description of errors
-      {:exit-message (error-msg errors)}
-      (features-path-exists? (first arguments))
-      (merge default-config
-             {::r/features-path (first arguments)}
-             options)
-      :else ; failed custom validation => exit with usage summary
-      {:exit-message (usage summary)})))
+  ([args] (validate-args args cli-options))
+  ([args cli-options]
+   (let [{:keys [options arguments errors summary]}
+         (cli/parse-opts args cli-options)
+         config (merge default-config
+                       {::r/features-path (or (first arguments) ".")}
+                       options)]
+     (cond
+       (:help options) ; help => exit OK with usage summary
+       {:exit-message (usage summary) :ok? true}
+       errors ; errors => exit with description of errors
+       {:exit-message (error-msg errors)}
+       (features-path-exists? (::r/features-path config))
+       config
+       :else ; failed custom validation => exit with usage summary
+       {:exit-message (format "There is no directory at path %s."
+                              (::r/features-path config))}))))
 
 (comment
 
   (validate-args ["--help"])
+
+  (validate-args ["blargon"])
 
   (validate-args ["examples/apes/src/apes/features" "--stop"])
 
