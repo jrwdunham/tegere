@@ -2,14 +2,12 @@
  {com.taoensso/timbre {:mvn/version "4.10.0"}
   tegere
   {:git/url "https://github.com/jrwdunham/tegere"
-   :sha "da1515486efb67860f394c8ce8da5536014d1d9f"}}
+   :sha "35893ba7e72a40d424a2f41ab20a88c3bcb67ed5"}}
  :aliases
  {:dev
   {:extra-deps
    {nrepl/nrepl {:mvn/version "0.6.0"}
     cider/cider-nrepl {:mvn/version "0.22.0"}}
-   ;; :override-deps
-   ;; {tegere {:local/root "../.."}}
    :main-opts
    ["-m" "nrepl.cmdline"
     "--middleware" "[cider.nrepl/cider-middleware]"
