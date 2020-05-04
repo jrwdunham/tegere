@@ -789,7 +789,7 @@
       {:execution {:err nil}}]
      :feature "f-b"
      :scenario "s-b"}]
-   (r/summarize-run :as-data? false))
+   (r/summarize-run))
 
   (r/get-outcome-summary fake-run-outcome)
 

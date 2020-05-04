@@ -69,6 +69,7 @@
          ::steps-passed
          ::steps-failed
          ::steps-untested]))
+(s/def ::outcome-summary-report string?)
 (s/def ::start-time inst?)
 (s/def ::end-time inst?)
 (s/def ::ctx-after-exec (s/nilable map?))
@@ -88,6 +89,12 @@
           ::end-time
           ::ctx-after-exec
           ::err])))
+
+(s/def ::run
+  (s/keys
+   :req [::outcome-summary
+         ::outcome-summary-report
+         ::executables]))
 
 (defn features-are-empty?
   "Return true if there are no scenarios in features"
@@ -431,7 +438,7 @@
    default-outcome-summary
    outcome-map))
 
-(defn format-outcome-summary-map
+(defn get-outcome-summary-report
   "Convert a map summarizing the output of running the features to a
   human-readable string summarizing the same information. Input is something
   like::
@@ -471,22 +478,20 @@
     (throw (AssertionError. (u/pp-str run-outcome)))))
 
 (defn summarize-run
-  "Given an ``::executables`` collection, return a string (or data)
-  summarization of the outcome of running all of the features. Something like:
+  "Given an ``::executables`` collection, return a map with spec-conformant keys
+  ``::outcome-summary`` and ``::outcome-summary-report``, the latter being a
+  string like:
 
-  0 features passed, 1 failed
-  0 scenarios passed, 1 failed
-  0 steps passed, 4 failed, 1 untested
-
-  If ``:as-data? true`` is passed, will return an outcome summary map instead of
-  a string."
-  [executables & {:keys [as-data?]}]
-  (letfn [(summarize [data] (if as-data? data (format-outcome-summary-map data)))]
-    (->> executables
-         get-run-outcome
-         validate-run-outcome
-         get-outcome-summary
-         summarize)))
+      0 features passed, 1 failed
+      0 scenarios passed, 1 failed
+      0 steps passed, 4 failed, 1 untested"
+  [executables]
+  (let [outcome-summary (->> executables
+                             get-run-outcome
+                             validate-run-outcome
+                             get-outcome-summary)]
+    {::outcome-summary outcome-summary
+     ::outcome-summary-report (get-outcome-summary-report outcome-summary)}))
 
 (defn validate-executables
   [executables]
@@ -497,10 +502,13 @@
       "Failed to construct a valid collection of executables. Error:\n%s"
       (s/explain-str ::executables executables)))))
 
+(defn construct-run [executables]
+  (u/just (assoc (summarize-run executables) ::executables executables)))
+
 (defn run
   "Run seq of features matching tags using the step functions defined in
-  step-registry. Return an ``::executables`` collection representing the result
-  of running the features."
+  step-registry. Return a ``::run`` map representing the result of running the
+  features."
   ([features step-registry] (run features step-registry {}))
   ([features step-registry {query ::q/query-tree stop ::stop}
     & {:keys [initial-ctx] :or {initial-ctx {}}}]
@@ -509,10 +517,11 @@
               (partial get-features-to-run query)
               (partial add-step-fns step-registry)
               (partial execute initial-ctx stop)
-              validate-executables)
-    (fn [executables]
-      (println (summarize-run executables))
-      executables)
+              validate-executables
+              construct-run)
+    (fn [{:keys [::outcome-summary-report] :as run-ret}]
+      (println outcome-summary-report)
+      run-ret)
     (fn [error]
       (println error)
       error))))

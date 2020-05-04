@@ -724,7 +724,7 @@
 (t/deftest can-run-simple-feature-test
   (t/testing "We can run a simple feature"
     (let [features [(parser/parse chimpanzee-feature)]
-          execution (ignore-out-err (sut/run features fake-registry {}))
+          execution (::sut/executables (ignore-out-err (sut/run features fake-registry {})))
           exec-steps (->> execution (map ::parser/steps) flatten)
           exec-step-count (count exec-steps)
           success-exec-steps (filter
@@ -770,7 +770,8 @@
   (t/testing "We can run a simple feature against a steps registry with steps
              that take parameters"
     (let [features [(parser/parse chimpanzee-feature)]
-          execution (ignore-out-err (sut/run features fake-registry-error {}))
+          execution (::sut/executables
+                     (ignore-out-err (sut/run features fake-registry-error {})))
           exec-steps (->> execution (map ::parser/steps) flatten)
           exec-step-count (count exec-steps)
           success-exec-steps (filter
@@ -801,7 +802,7 @@
     (let [features [(parser/parse chimpanzee-feature)]
           execution
           (ignore-out-err (sut/run features fake-registry-error {::sut/stop true}))
-          exec-steps (->> execution (map ::parser/steps) flatten)
+          exec-steps (->> execution ::sut/executables (map ::parser/steps) flatten)
           success-exec-steps (filter
                               (fn [s] (nil? (-> s ::sut/execution ::sut/err))) exec-steps)
           success-exec-step-count (count success-exec-steps)
@@ -906,11 +907,12 @@
           s-b {::parser/description "b" ::parser/tags []}]
       (t/are
           [run-outcome expected]
-          (= expected (sut/summarize-run run-outcome :as-data? true))
+          (= expected (-> run-outcome sut/summarize-run ::sut/outcome-summary))
 
         ;; 2 features, each with 1 scenario; first feature fails because its
         ;; scenario fails because one of its step executions errors; second feature
         ;; passes because its sole scenario does.
+
         [{::parser/steps  ;; pass, pass, error, untested, untested
           [{::sut/execution {::sut/err nil}}
            {::sut/execution {::sut/err nil}}

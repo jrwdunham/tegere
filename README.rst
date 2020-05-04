@@ -168,11 +168,12 @@ populated registry:
        2 steps passed, 1 failed, 0 untested
 
 As illustrated above, the execution of features entails a side-effect: the
-outcome of said execution is written to stdout. The return value of ``run``, on
-the other hand, is data: a step execution map detailing how long each step took,
-the context value it returned, and whether it passed or failed.
+outcome of the execution is written to stdout. The return value of ``run``, on
+the other hand, is data: a ``:tegere.runner/run`` data structure that details
+how long each step took, the context value it returned, and whether it passed or
+failed.
 
-An optional third argument --- a configuration map --- may be passed to ``run``.
+An optional third argument (a configuration map) may be passed to ``run``.
 Setting the boolean key ``tegere.runner/stop`` to ``true`` will cause TeGere to
 stop feature execution after the first failure. The value of
 ``:tegere.query/query-tree`` may be a boolean search tree (see the spec_) that
@@ -182,8 +183,9 @@ controls which scenarios get executed:
 Create a Command-line Interface
 --------------------------------------------------------------------------------
 
-The ``tegere.cli2`` namespaces contains ``validate-args`` function that can be
-used to create a command-line interface to a TeGere feature runner. For example:
+The ``tegere.cli2`` namespaces contains the ``validate-args`` function, which
+can be used to create a command-line interface to a TeGere feature runner. For
+example:
 
 .. code-block:: clojure
 
