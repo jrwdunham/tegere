@@ -5,8 +5,7 @@
   (:require [alandipert.intension :refer [make-db]]
             [clojure.set :as set]
             [clojure.spec.alpha :as s]
-            [datascript.core :refer [q]]
-            [clojure.pprint :as pprint]))
+            [datascript.core :refer [q]]))
 
 (s/def ::tag string?)
 (s/def ::tags (s/coll-of ::tag))

@@ -16,7 +16,9 @@
   (s/keys
    :req [::type
          ::text]
-   :opt [::original-type]))
+   :opt [::original-type
+         :tegere.runner/fn
+         :tegere.runner/execution]))
 (s/def ::steps (s/coll-of ::step))
 (s/def ::name string?)
 (s/def ::description string?)

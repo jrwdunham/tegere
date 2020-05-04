@@ -54,14 +54,14 @@
   (println (format-step step start-time end-time :yellow))
   (println (tegansi/style
             (str "        Assertion error: "
-                 (format-assertion-error (:message err)))
+                 (format-assertion-error (:tegere.runner/message err)))
             :yellow)))
 
 (defn print-step-error
   [step err start-time end-time]
-  (let [fmtd-stack-trace (get-formatted-stack-trace (:stack-trace err))]
+  (let [fmtd-stack-trace (get-formatted-stack-trace (:tegere.runner/stack-trace err))]
     (println (format-step step start-time end-time :red))
-    (println (tegansi/style (str "        Error: " (:message err)) :red))
+    (println (tegansi/style (str "        Error: " (:tegere.runner/message err)) :red))
     (println fmtd-stack-trace)))
 
 (defn print-execution
@@ -69,8 +69,8 @@
   or errors with stack traces."
   [step err start-time end-time]
   (cond
-    (= :error (:type err)) (print-step-error step err start-time end-time)
-    (= :fail (:type err)) (print-step-fail step err start-time end-time)
+    (= :error (:tegere.runner/type err)) (print-step-error step err start-time end-time)
+    (= :fail (:tegere.runner/type err)) (print-step-fail step err start-time end-time)
     :else (println (format-step-passed step start-time end-time))))
 
 (defn get-feature-repr

@@ -1,7 +1,6 @@
 (ns tegere.cli2
   (:require [clojure.string :as str]
             [clojure.tools.cli :as cli]
-            [clojure.set :as set]
             [me.raynes.fs :as fs]
             [tegere.grammar :refer [old-style-tag-expr-prsr]]
             [tegere.parser :as p]

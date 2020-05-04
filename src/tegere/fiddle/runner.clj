@@ -1,7 +1,7 @@
 (ns tegere.fiddle.runner
   "Fiddle file for playing around with runner.clj."
   (:require [tegere.runner :as r]
-            [tegere.parser :as parser]
+            [tegere.parser :as p]
             [tegere.fiddle.grammar :refer [chimpanzee-feature]]))
 
 (defn update-step-rets
@@ -32,7 +32,7 @@
 (defn for-repl
   "Call this in a REPL to see how printing to stdout works."
   [& {:keys [stop?] :or {stop? false}}]
-  (let [features [(parser/parse chimpanzee-feature) (parser/parse chimpanzee-feature)]
+  (let [features [(p/parse chimpanzee-feature) (p/parse chimpanzee-feature)]
         config {:tags {:and-tags #{"chimpanzees" "fruit-reactions"}}
                 :stop stop?}
         fake-registry
@@ -57,7 +57,7 @@
   [{:steps
     [{:type :given
       :text "a chimpanzee"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.389-00:00"
        :end-time #inst "2019-07-28T15:42:19.389-00:00"
@@ -65,7 +65,7 @@
        :err nil}}
      {:type :when
       :text "I give him a banana"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.390-00:00"
        :end-time #inst "2019-07-28T15:42:19.390-00:00"
@@ -73,7 +73,7 @@
        :err nil}}
      {:type :then
       :text "he is happy"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.390-00:00"
        :end-time #inst "2019-07-28T15:42:19.391-00:00"
@@ -149,12 +149,12 @@
      {:type :then
       :text "he doesn't eat it"
       :original-type :but
-      :fn nil
+      ::r/fn nil
       :execution nil}
      {:type :then
       :text "he looks at me quizzically"
       :original-type :and
-      :fn nil
+      ::r/fn nil
       :execution nil}]
     :feature
     {:name "Chimpanzees behave as expected"
@@ -167,7 +167,7 @@
    {:steps
     [{:type :given
       :text "a chimpanzee"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
@@ -175,7 +175,7 @@
        :err nil}}
      {:type :when
       :text "I give him a pear"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
@@ -183,7 +183,7 @@
        :err nil}}
      {:type :then
       :text "he is sad"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
@@ -192,7 +192,7 @@
      {:type :then
       :text "he doesn't eat it"
       :original-type :but
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
@@ -202,7 +202,7 @@
      {:type :then
       :text "he looks at me loathingly"
       :original-type :and
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.393-00:00"
        :end-time #inst "2019-07-28T15:42:19.393-00:00"
@@ -221,7 +221,7 @@
    {:steps
     [{:type :given
       :text "a chimpanzee"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.393-00:00"
        :end-time #inst "2019-07-28T15:42:19.393-00:00"
@@ -229,7 +229,7 @@
        :err nil}}
      {:type :when
       :text "I give him a banana"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
@@ -237,7 +237,7 @@
        :err nil}}
      {:type :then
       :text "he is happy"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
@@ -317,12 +317,12 @@
      {:type :then
       :text "he doesn't eat it"
       :original-type :but
-      :fn nil
+      ::r/fn nil
       :execution nil}
      {:type :then
       :text "he looks at me quizzically"
       :original-type :and
-      :fn nil
+      ::r/fn nil
       :execution nil}]
     :feature
     {:name "Chimpanzees behave as expected"
@@ -335,7 +335,7 @@
    {:steps
     [{:type :given
       :text "a chimpanzee"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
@@ -343,7 +343,7 @@
        :err nil}}
      {:type :when
       :text "I give him a pear"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
@@ -351,7 +351,7 @@
        :err nil}}
      {:type :then
       :text "he is sad"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
@@ -360,7 +360,7 @@
      {:type :then
       :text "he doesn't eat it"
       :original-type :but
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
@@ -370,7 +370,7 @@
      {:type :then
       :text "he looks at me loathingly"
       :original-type :and
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
@@ -392,7 +392,7 @@
     [{:type :when
       :text
       "a well-formed request is made to update the chimpanzee-integrated liquidity for space 3170 of pork 651 owned by company 13"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T16:09:24.804-00:00"
        :end-time #inst "2019-07-28T16:09:26.200-00:00"
@@ -402,7 +402,7 @@
        :err nil}}
      {:type :then
       :text "a successful response is received"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T16:09:26.201-00:00"
        :end-time #inst "2019-07-28T16:09:26.201-00:00"
@@ -423,7 +423,7 @@
   [{:steps  ;; pass, pass, error, untested, untested
     [{:type :given
       :text "a chimpanzee"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.389-00:00"
        :end-time #inst "2019-07-28T15:42:19.389-00:00"
@@ -431,7 +431,7 @@
        :err nil}}
      {:type :when
       :text "I give him a banana"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.390-00:00"
        :end-time #inst "2019-07-28T15:42:19.390-00:00"
@@ -439,7 +439,7 @@
        :err nil}}
      {:type :then
       :text "he is happy"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.390-00:00"
        :end-time #inst "2019-07-28T15:42:19.391-00:00"
@@ -454,12 +454,12 @@
      {:type :then
       :text "he doesn't eat it"
       :original-type :but
-      :fn nil
+      ::r/fn nil
       :execution nil}
      {:type :then
       :text "he looks at me quizzically"
       :original-type :and
-      :fn nil
+      ::r/fn nil
       :execution nil}]
     :feature
     {:name "Chimpanzees behave as expected"
@@ -472,7 +472,7 @@
    {:steps  ;; pass, pass, pass, pass, pass
     [{:type :given
       :text "a chimpanzee"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
@@ -480,7 +480,7 @@
        :err nil}}
      {:type :when
       :text "I give him a pear"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
@@ -488,7 +488,7 @@
        :err nil}}
      {:type :then
       :text "he is sad"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
@@ -497,7 +497,7 @@
      {:type :then
       :text "he doesn't eat it"
       :original-type :but
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.392-00:00"
        :end-time #inst "2019-07-28T15:42:19.392-00:00"
@@ -507,7 +507,7 @@
      {:type :then
       :text "he looks at me loathingly"
       :original-type :and
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.393-00:00"
        :end-time #inst "2019-07-28T15:42:19.393-00:00"
@@ -526,7 +526,7 @@
    {:steps  ;; pass, pass, error, untested, untested
     [{:type :given
       :text "a chimpanzee"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.393-00:00"
        :end-time #inst "2019-07-28T15:42:19.393-00:00"
@@ -534,7 +534,7 @@
        :err nil}}
      {:type :when
       :text "I give him a banana"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
@@ -542,7 +542,7 @@
        :err nil}}
      {:type :then
       :text "he is happy"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
@@ -557,12 +557,12 @@
      {:type :then
       :text "he doesn't eat it"
       :original-type :but
-      :fn nil
+      ::r/fn nil
       :execution nil}
      {:type :then
       :text "he looks at me quizzically"
       :original-type :and
-      :fn nil
+      ::r/fn nil
       :execution nil}]
     :feature
     {:name "Chimpanzees behave as expected"
@@ -575,7 +575,7 @@
    {:steps  ;; pass, pass, pass, pass, pass
     [{:type :given
       :text "a chimpanzee"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
@@ -583,7 +583,7 @@
        :err nil}}
      {:type :when
       :text "I give him a pear"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.394-00:00"
        :end-time #inst "2019-07-28T15:42:19.394-00:00"
@@ -591,7 +591,7 @@
        :err nil}}
      {:type :then
       :text "he is sad"
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
@@ -600,7 +600,7 @@
      {:type :then
       :text "he doesn't eat it"
       :original-type :but
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
@@ -610,7 +610,7 @@
      {:type :then
       :text "he looks at me loathingly"
       :original-type :and
-      :fn nil
+      ::r/fn nil
       :execution
       {:start-time #inst "2019-07-28T15:42:19.395-00:00"
        :end-time #inst "2019-07-28T15:42:19.395-00:00"
@@ -789,7 +789,7 @@
       {:execution {:err nil}}]
      :feature "f-b"
      :scenario "s-b"}]
-   (r/get-outcome-summary :as-data? false))
+   (r/summarize-run :as-data? false))
 
   (r/get-outcome-summary fake-run-outcome)
 
@@ -809,7 +809,7 @@
 
   ((r/get-step-fn fake-registry {:type :when :text "I give him a pear"}) {})
 
-  (let [features [(parser/parse chimpanzee-feature) (parser/parse chimpanzee-feature)]
+  (let [features [(p/parse chimpanzee-feature) (p/parse chimpanzee-feature)]
         config {:tags {:and-tags #{"chimpanzees" "fruit-reactions"}}
                 :stop false}
         fake-registry
@@ -826,7 +826,7 @@
                 (fn [context] (update-step-rets context :looks-quizzically))}}]
     (r/run features fake-registry config))
 
-  (let [features [(parser/parse chimpanzee-feature) (parser/parse chimpanzee-feature)]
+  (let [features [(p/parse chimpanzee-feature) (p/parse chimpanzee-feature)]
         config {:tags {:and-tags #{"chimpanzees" "fruit-reactions"}}
                 :stop false}
         fake-registry

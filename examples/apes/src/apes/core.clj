@@ -7,8 +7,7 @@
             [tegere.loader :as l]
             [tegere.runner :as r]
             [tegere.steps :as s]
-            [apes.steps.core]
-            [clojure.string :as str])
+            [apes.steps.core])
   (:gen-class))
 
 (if-let [log-path (System/getenv "APES_LOG_FILE")]
