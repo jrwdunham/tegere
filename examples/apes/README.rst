@@ -32,25 +32,41 @@ including step execution times::
         And he looks at me quizzically (took 0.0s)
 
 The return value of the function is a data structure representing a record of the
-feature execution::
+feature execution:
 
-    (#:tegere.parser{:steps
-                    ({:tegere.parser/type :given,
-                      :tegere.parser/text "a chimpanzee",
-                      :fn
-                      #function[tegere.runner/get-step-fn/fn--10989/fn--10993],
-                      :execution
-                      {:start-time #inst "2020-05-03T17:59:58.172-00:00",
-                        :end-time #inst "2020-05-03T17:59:58.172-00:00",
-                        :ctx-after-exec
-                        {:config
-                        {:tegere.runner/stop true,
-                          :tegere.runner/verbose false,
-                          :tegere.runner/data {},
-                          :tegere.query/query-tree nil,
-                          :tegere.runner/features-path "src/apes/features"},
-                        :step-rets [:a-chimpanzee]},
-                        :err nil}} ...)})
+.. code-block:: clojure
+
+       #:tegere.runner{:outcome-summary
+                       #:tegere.runner{:steps-passed 26,
+                                       :steps-untested 0,
+                                       :steps-failed 0,
+                                       :scenarios-passed 4,
+                                       :scenarios-failed 0,
+                                       :features-passed 2,
+                                       :features-failed 0},
+                       :outcome-summary-report
+                       "\n2 features passed, 0 failed\n4 scenarios passed, 0 failed\n26 steps passed, 0 failed, 0 untested\n",
+                       :executables
+                       ({:tegere.parser/steps
+                         ({:tegere.parser/type :given,
+                           :tegere.parser/text "a chimpanzee",
+                           :tegere.runner/fn
+                           #function[tegere.runner/get-step-fn/fn--11332/fn--11336],
+                           :tegere.runner/execution
+                           #:tegere.runner{:start-time
+                                           #inst "2020-05-04T22:44:58.484-00:00",
+                                           :end-time
+                                           #inst "2020-05-04T22:44:58.484-00:00",
+                                           :ctx-after-exec
+                                           {:config
+                                            {:tegere.runner/stop true,
+                                             :tegere.runner/verbose false,
+                                             :tegere.runner/data {},
+                                             :tegere.query/query-tree nil,
+                                             :tegere.runner/features-path
+                                             "src/apes/features"},
+                                            :step-rets [:a-chimpanzee]},
+                                           :err nil}} ...)}...)}
 
 
 Run from the Command Line
@@ -73,7 +89,7 @@ files. The following example will run only those two scenarios where a chimp
 receives a banana or a bonobo is interacting with an orangutan::
 
     $ clj -m apes.core src/apes/features/ \
-          --tags='@chimpanzees & @fruit=banana or @bonobos and @orangutan'
+          --tags='@chimpanzees and @fruit=banana or @bonobos and @orangutan'
     2 features passed, 0 failed
     2 scenarios passed, 0 failed
     8 steps passed, 0 failed, 0 untested

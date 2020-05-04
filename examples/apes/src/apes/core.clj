@@ -51,6 +51,14 @@
 
   (cli/validate-args
    ["src/apes/features"
+    "--tags=@chimpanzees and @fruit=banana or @bonobos and @orangutan"
+    "-Durl=http://api.example.com"
+    "--data=password=secret"
+    "--stop"
+    "--verbose"])
+
+  (cli/validate-args
+   ["src/apes/features"
     "--tags=@bonobos or @chimpanzees"
     "--tags=not @orangutan"
     "-Durl=http://api.example.com"

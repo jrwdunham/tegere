@@ -177,7 +177,7 @@ An optional third argument (a configuration map) may be passed to ``run``.
 Setting the boolean key ``:tegere.runner/stop`` to ``true`` will cause TeGere to
 stop feature execution after the first failure. The value of
 ``:tegere.query/query-tree``, if supplied, must be a boolean search tree (see the
-spec_); it controls which scenarios get executed. 
+spec_); it controls which scenarios get executed.
 
 
 Create a Command-line Interface
@@ -203,7 +203,7 @@ example:
         :tegere.query/query-tree (and (not "orangutan") (or "bonobos" "chimpanzees")),
         :tegere.runner/features-path "src/apes/features"}
 
-In the apes example application, the above allows us to run the features from the
+In the Apes_ example application, the above allows us to run the features from the
 command-line using the ``clj`` tool and a command like the following:
 
 .. code-block:: bash
@@ -211,7 +211,7 @@ command-line using the ``clj`` tool and a command like the following:
        $ clj -m apes.core src/apes/features/ \
              --tags='@chimpanzees & @fruit=banana or @bonobos and @orangutan'
 
-See the ``apes.core`` namespace in the ``apes`` examples app for more details.
+See the ``apes.core`` namespace in the Apes_ examples app for more details.
 
 
 Run the Tests
