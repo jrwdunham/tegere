@@ -174,22 +174,22 @@ how long each step took, the context value it returned, and whether it passed or
 failed.
 
 An optional third argument (a configuration map) may be passed to ``run``.
-Setting the boolean key ``tegere.runner/stop`` to ``true`` will cause TeGere to
+Setting the boolean key ``:tegere.runner/stop`` to ``true`` will cause TeGere to
 stop feature execution after the first failure. The value of
-``:tegere.query/query-tree`` may be a boolean search tree (see the spec_) that
-controls which scenarios get executed:
+``:tegere.query/query-tree``, if supplied, must be a boolean search tree (see the
+spec_); it controls which scenarios get executed. 
 
 
 Create a Command-line Interface
 --------------------------------------------------------------------------------
 
-The ``tegere.cli2`` namespaces contains the ``validate-args`` function, which
+The ``tegere.cli`` namespaces contains the ``validate-args`` function, which
 can be used to create a command-line interface to a TeGere feature runner. For
 example:
 
 .. code-block:: clojure
 
-       (cli2/validate-args
+       (cli/validate-args
          ["src/apes/features"
           "--tags=@bonobos or @chimpanzees"
           "--tags=not @orangutan"

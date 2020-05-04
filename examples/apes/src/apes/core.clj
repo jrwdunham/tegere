@@ -3,7 +3,7 @@
   (:require #_[clojure.pprint :as pprint]
             [taoensso.timbre.appenders.core :as appenders]
             [taoensso.timbre :as timbre]
-            [tegere.cli2 :as cli]
+            [tegere.cli :as cli]
             [tegere.loader :as l]
             [tegere.runner :as r]
             [tegere.steps :as s]
