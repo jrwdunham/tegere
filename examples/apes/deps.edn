@@ -2,7 +2,7 @@
  {com.taoensso/timbre {:mvn/version "4.10.0"}
   tegere
   {:git/url "https://github.com/jrwdunham/tegere"
-   :sha "1df2851f3701acf0e75afb9c8427cecaba940484"}}
+   :sha "630e2f398cc809f584f126d40cd5cf3f3e477cbf"}}
  :aliases
  {:dev
   {:extra-deps

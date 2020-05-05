@@ -28,7 +28,7 @@ Add the following line to the `:deps` map of your deps.edn:
 
        tegere
        {:git/url "https://github.com/jrwdunham/tegere"
-        :sha "26ecbb109829dc4ee8597c20cb9d27c347773d9c"}}
+        :sha "630e2f398cc809f584f126d40cd5cf3f3e477cbf"}}
 
 Then write some Gherkin_ feature files and save them (with the `.feature`
 extension) to some directory. Now map the Gherkin step strings to Clojure
