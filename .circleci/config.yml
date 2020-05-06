@@ -1,0 +1,17 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/tegere
+    docker:
+      - image: circleci/clojure:openjdk-11-tools-deps-1.10.0.442
+    steps:
+      - checkout
+      - restore_cache:
+          key: tegere-{{ checksum "deps.edn" }}
+      - run: clojure -R:test -Spath
+      - save_cache:
+          paths:
+            - ~/.m2
+            - ~/.gitlibs
+          key: tegere-{{ checksum "deps.edn" }}
+      - run: clojure -A:test
