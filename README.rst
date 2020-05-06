@@ -4,6 +4,8 @@
 
 .. image:: https://travis-ci.com/jrwdunham/tegere.svg?branch=master
     :target: https://travis-ci.com/jrwdunham/tegere.svg?branch=master
+.. image:: https://circleci.com/gh/jrwdunham/tegere.svg?style=svg
+    :target: https://circleci.com/gh/jrwdunham/tegere
 .. image:: https://img.shields.io/clojars/v/tegere.svg
     :target: https://clojars.org/tegere
 
