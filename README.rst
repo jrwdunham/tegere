@@ -2,6 +2,11 @@
   TeGere
 ================================================================================
 
+.. image:: https://travis-ci.com/jrwdunham/tegere.svg?branch=master
+    :target: https://travis-ci.com/jrwdunham/tegere.svg?branch=master
+.. image:: https://img.shields.io/clojars/v/tegere.svg
+    :target: https://clojars.org/tegere
+
 A Gherkin library for Clojure. To "te gere" is to carry oneself with dignity or,
 as the vulgar crowd might say, to "behave!".
 
@@ -22,15 +27,19 @@ Takes inspiration from `Python Behave`_.
 Quickstart
 ================================================================================
 
-Add the following line to the `:deps` map of your deps.edn:
+The latest version on Clojars:
 
-.. code-block:: clojure
+.. code-block:: bash
 
-       tegere
-       {:git/url "https://github.com/jrwdunham/tegere"
-        :sha "630e2f398cc809f584f126d40cd5cf3f3e477cbf"}}
+      {tegere {:mvn/version "0.1.0"}}
 
-Then write some Gherkin_ feature files and save them (with the `.feature`
+Try it out quickly:
+
+.. code-block:: bash
+
+      clj -Sdeps "{:deps {tegere {:mvn/version \"0.1.0\"}}}"
+
+Now write some Gherkin_ feature files and save them (with the ``.feature``
 extension) to some directory. Now map the Gherkin step strings to Clojure
 functions using the ``Given``, ``When`` and ``Then`` functions of
 ``tegere.steps``. Finally, execute the features by calling:
@@ -44,7 +53,7 @@ functions using the ``Given``, ``When`` and ``Then`` functions of
 An optional config map may be passed to ``run`` as a third argument. It
 recognizes the boolean key ``tegere.runner/stop`` which will cause TeGere to stop
 feature execution after the first failure, and ``:tegere.query/query-tree`` which
-is a boolean search tree (see the spec) that controls which scenarios get
+is a boolean search tree (see the spec_) that controls which scenarios get
 executed:
 
 .. code-block:: clojure
@@ -105,8 +114,8 @@ directory path to ``tegere.loader/load-feature-files``:
                                           #:tegere.parser{:type :then,
                                                           :text "he is happy"}]}]}]
 
-The loaded feature is a ``::tegere.parser/features`` collection of
-``::tegere.parser/feature`` maps.
+The loaded feature is a ``:tegere.parser/features`` collection of
+``:tegere.parser/feature`` maps.
 
 
 Map Gherkin Step Definitions to Clojure Step Functions

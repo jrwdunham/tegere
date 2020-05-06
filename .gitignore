@@ -16,3 +16,4 @@ secrets/
 .nrepl-history
 .cpcache/
 .clj-kondo/
+RELEASE.rst
