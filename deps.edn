@@ -1,14 +1,20 @@
-{:aliases
+{:deps
+ {alandipert/intension {:mvn/version "1.1.1"}
+  datascript {:mvn/version "0.18.11"}
+  me.raynes/fs {:mvn/version "1.4.6"}
+  org.clojure/clojure {:mvn/version "1.9.0"}
+  org.clojure/spec.alpha {:mvn/version "0.2.176"}
+  org.clojure/tools.cli {:mvn/version "1.0.194"}
+  org.clojure/tools.namespace {:mvn/version "0.2.11"}
+  instaparse {:mvn/version "1.4.10"}}
+ :paths
+ ["src" "resources"]
+ :aliases
  {:test
   {:extra-paths ["test" "resources"]
    :extra-deps
    {com.cognitect/test-runner
     {:git/url "https://github.com/cognitect-labs/test-runner"
-     :sha "76568540e7f40268ad2b646110f237a60295fa3c"}}
-   :main-opts ["-m" "cognitect.test-runner" "-d" "test"]}
-  :run {:main-opts ["-m" "tegere.core"]}}
- :deps
- {org.clojure/clojure {:mvn/version "1.9.0"}
-  org.clojure/tools.namespace {:mvn/version "0.2.11"}
-  me.raynes/fs {:mvn/version "1.4.6"}
-  instaparse {:mvn/version "1.4.10"}}}
+     :sha "f7ef16dc3b8332b0d77bc0274578ad5270fbfedd"}}
+   :main-opts ["-m" "cognitect.test-runner"
+               "-d" "test"]}}}

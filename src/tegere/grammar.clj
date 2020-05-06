@@ -53,7 +53,7 @@
 
 ;; "so" means "Scenario Outline". Steps in a scenario outline must be able to
 ;; recognize variable references between angle brackets, e.g.,
-;; "Given a <modifier> monkey".
+;; "Given a <modifier> chimpanzee".
 (def so-step-grmr
   (str
    "SO_STEP = INDENT STEP_LABEL (VARIABLE | STEP_TEXT)+ NEW_LINE\n"
@@ -233,3 +233,110 @@
   [input]
   (let [input (if (string/ends-with? input "\n") input (str input "\n"))]
     (-feature-prsr input)))
+
+;; ==============================================================================
+;; "Old-style" tag expression grammar
+;; ==============================================================================
+
+(def oste-tag-grmr
+  (str
+   "<TAG> = <[TAG_SYMBOL]> TAG_NAME\n"
+   "TAG_SYMBOL = '@'\n"
+   "<TAG_NAME> = #'[^\\s@~][^\\s,]*'"))
+
+(def oste-tag-prsr (insta/parser oste-tag-grmr))
+
+(def negated-oste-tag-grmr
+  (str
+   "NEG = <NEGATION> TAG\n"
+   "NEGATION = '~'\n"
+   oste-tag-grmr))
+
+(def negated-oste-tag-prsr (insta/parser negated-oste-tag-grmr))
+
+(def oste-tag-phrase-cli-grmr
+  (str
+   "<TAG_PHRASE> = TAG | NEG\n"
+   oste-tag-grmr
+   negated-oste-tag-grmr))
+
+(def oste-tag-phrase-cli-prsr (insta/parser oste-tag-phrase-cli-grmr))
+
+(def disjunction-oste-tags-cli-grmr
+  (str
+   "DISJ = TAG DISJUNCT+\n"
+   "<DISJUNCT> = <WS*> <OR> <WS*> TAG_PHRASE\n"
+   "OR = ','\n"
+   "WS = #'\\s'\n"
+   oste-tag-phrase-cli-grmr))
+
+(def disjunction-oste-tags-cli-prsr (insta/parser disjunction-oste-tags-cli-grmr))
+
+(def old-style-tag-expr-grmr
+  (str
+   "<OSTE> = DISJ | TAG_PHRASE\n"
+   disjunction-oste-tags-cli-grmr))
+
+(def old-style-tag-expr-prsr
+  "This should parse old-style tag expression strings, like '@dog,~@cat', into
+  raw tags, negated tag vectors, or vectors of disjoined tag expressions. The @
+  sign before tags is optional and whitespace between tags is removed. Examples:
+
+      cat                      => (cat)
+      @cat                     => (cat)
+      ~@cat                    => ([:NEG cat])
+      cat,~@dog,cow,~bunny     => ([:DISJ cat [:NEG dog] cow [:NEG bunny]])
+      cat , ~@dog,cow , ~bunny => ([:DISJ cat [:NEG dog] cow [:NEG bunny]])"
+  (insta/parser old-style-tag-expr-grmr))
+
+;; ==============================================================================
+;; Tag Expression grammar
+;; ==============================================================================
+
+;; See https://cucumber.io/docs/cucumber/api/#tag-expressions
+;; and https://github.com/cucumber/cucumber/tree/master/tag-expressions
+
+(def tag-expression-cli-grmr
+  "This grammar uses the PEG extensions of Instaparse in order to simulate the
+  Shunting-yard algorithm. It will parse ambiguous boolean grammars such that
+  (minimally) the example at
+  https://github.com/cucumber/cucumber/tree/master/tag-expressions is correct::
+
+      (= (parser/parse-tag-expression-with-fallback
+           not @a or @b and not @c or not @d or @e and @f)
+      '(or (or (or (not a) (and b (not c))) (not d)) (and e f)))
+
+  This is accomplished via strategic use of the 'ordered choice' operator '/'."
+  (str
+   "<S> = DISJ / ( TAG | NEG | CONJ )\n"
+   "<X> = NEG / ( TAG | CONJ ) / DISJ\n"
+   "<Y> = TAG / ( NEG | CONJ | DISJ )\n"
+   "DISJ =        <WS>* S <WS>+ <OR> <WS>+ X | "
+   "       <LPAR> <WS>* S <WS>+ <OR> <WS>+ X <RPAR>\n"
+   "CONJ =        <WS>* X <WS>+ <AND> <WS>+ X | "
+   "       <LPAR> <WS>* X <WS>+ <AND> <WS>+ X <RPAR>\n"
+   "NEG =        <WS>* <NOT> <WS>+ Y | "
+   "      <LPAR> <WS>* <NOT> <WS>+ Y <RPAR>\n"
+   "<TAG> = <TAG_SYMBOL> TAG_NAME\n"
+   "TAG_SYMBOL = '@'\n"
+   "<TAG_NAME> = #'[^\\s@()][^\\s()]*'"
+   "OR = 'or'\n"
+   "AND = 'and'\n"
+   "NOT = 'not'\n"
+   "WS = #'\\s'\n"
+   "LPAR = '('\n"
+   "RPAR = ')'\n"))
+
+(def tag-expression-cli-prsr (insta/parser tag-expression-cli-grmr))
+
+(comment
+
+  (insta/parse
+   tag-expression-cli-prsr
+   "@a and @b")
+
+  (insta/parses
+   tag-expression-cli-prsr
+   "not @a or @b and not @c or not @d or @e and @f")
+
+)

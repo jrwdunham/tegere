@@ -1,13 +1,44 @@
 (ns tegere.parser
-  "Parser: implementation of parse, which converts a feature file to a map
-  representing the feature. That map has keys :name, :description, :tags,
-  :scenarios. The scenarios value is a seq of scenario maps. Each scenario map
-  has keys :description, :tags and :steps. The steps value is a seq of step maps.
-  Each step map has :type and :text keys. All Scenario Outlines are converted
-  to seqs of scenario maps; that is, the scenario outlines are expanded using
+  "Defines the function `parse`, which takes a Gherkin feature string and returns
+  a maybe `::feature` map. Note that Gherkin `Scenario Outlines` are converted to
+  seqs of `::scenario` maps; that is, the scenario outlines are expanded using
   their examples tables."
-  (:require [clojure.string :as s]
-            [tegere.grammar :refer [feature-prsr]]))
+  (:require [clojure.string :as str]
+            [clojure.spec.alpha :as s]
+            [instaparse.core :refer [failure?]]
+            [tegere.grammar :as grammar]
+            #_[tegere.utils :as u]))
+
+(s/def ::type #{:given :when :then})
+(s/def ::original-type #{:but :and})
+(s/def ::text string?)
+(s/def ::step
+  (s/keys
+   :req [::type
+         ::text]
+   :opt [::original-type
+         :tegere.runner/fn
+         :tegere.runner/execution]))
+(s/def ::steps (s/coll-of ::step))
+(s/def ::name string?)
+(s/def ::description string?)
+(s/def ::tag string?)
+(s/def ::tags (s/coll-of ::tag))
+(s/def ::examples-row (s/map-of string? string?))
+(s/def ::scenario
+  (s/keys
+   :req [::description
+         ::tags
+         ::steps]
+   :opt [::examples-row]))
+(s/def ::scenarios (s/coll-of ::scenario))
+(s/def ::feature
+  (s/keys
+   :req [::name
+         ::description
+         ::tags
+         ::scenarios]))
+(s/def ::features (s/coll-of ::feature))
 
 (defn get-branches-matching-root-label
   [root-label [_ & branches]]
@@ -43,11 +74,11 @@
        (get-first-branch-matching-root-label :FEATURE_DESCRIPTION_BLOCK)
        (get-branches-matching-root-label :FEATURE_DESCRIPTION_LINE)
        (map (comp
-             s/trim
+             str/trim
              second
              (fn [n] (get-first-branch-matching-root-label
                       :FEATURE_DESCRIPTION_FRAGMENT n))))
-       (s/join " ")))
+       (str/join " ")))
 
 (defn get-tags
   [tree]
@@ -55,10 +86,10 @@
        (get-first-branch-matching-root-label :TAG_LINE)
        (get-first-branch-matching-root-label :TAG_SET)
        (get-branches-matching-root-label :TAG)
-       (map (comp
-             s/trim
-             second
-             (fn [n] (get-first-branch-matching-root-label :TAG_NAME n))))))
+       (mapv (comp
+              str/trim
+              second
+              (fn [n] (get-first-branch-matching-root-label :TAG_NAME n))))))
 
 (defn get-feature-tags
   [feature-block-tree]
@@ -71,9 +102,9 @@
 (defn process-feature-block
   [feature-tree]
   (let [feature-block-tree (get-feature-block feature-tree)]
-    {:name (get-feature-name feature-block-tree)
-     :description (get-feature-description feature-block-tree)
-     :tags (get-feature-tags feature-block-tree)}))
+    {::name (get-feature-name feature-block-tree)
+     ::description (get-feature-description feature-block-tree)
+     ::tags (get-feature-tags feature-block-tree)}))
 
 (defn get-scen-description
   [scen-tree line-key text-key]
@@ -81,7 +112,7 @@
        (get-first-branch-matching-root-label line-key)
        (get-first-branch-matching-root-label text-key)
        second
-       s/trim))
+       str/trim))
 
 (defn get-scenario-description
   [scenario-tree]
@@ -94,7 +125,7 @@
 
 (defn step-str->kw
   [step-str]
-  (-> step-str s/lower-case keyword))
+  (-> step-str str/lower-case keyword))
 
 (defn get-step-type
   [step-tree]
@@ -111,12 +142,12 @@
   (->> step-tree
        (get-first-branch-matching-root-label :STEP_TEXT)
        second
-       s/trim))
+       str/trim))
 
 (defn process-step-tree
   [step-tree]
-  {:type (get-step-type step-tree)
-   :text (get-step-text step-tree)})
+  {::type (get-step-type step-tree)
+   ::text (get-step-text step-tree)})
 
 (defn get-scenario-steps
   [scenario-tree]
@@ -131,14 +162,14 @@
        (get-first-branch-matching-root-label :EXAMPLES_LINE)
        (get-first-branch-matching-root-label :EXAMPLES_TEXT)
        second
-       s/trim))
+       str/trim))
 
 (defn row-trees->matrix
   [row-trees]
   (map (fn [tr-tree]
          (->> tr-tree
               (get-branches-matching-root-label :CELL)
-              (map (comp s/trim second))))
+              (map (comp str/trim second))))
        row-trees))
 
 (defn row-trees->table
@@ -157,16 +188,16 @@
 
 (defn get-examples
   [scenario-outline-tree]
-  (let [examples-tree 
+  (let [examples-tree
         (get-first-branch-matching-root-label :EXAMPLES scenario-outline-tree)]
-    {:name (get-examples-name examples-tree)
-     :table (get-examples-table examples-tree)}))
+    {::name (get-examples-name examples-tree)
+     ::table (get-examples-table examples-tree)}))
 
 (defmulti process-so-step-parts (fn [x] (first x)))
 
 (defmethod process-so-step-parts :STEP_TEXT
   [[_ step-text]]
-  [:text step-text])
+  [::text step-text])
 
 (defmethod process-so-step-parts :VARIABLE
   [[_ _ variable-name _]]
@@ -184,18 +215,21 @@
 
 (defn interpolate
   [so-steps table-row]
-  (map
+  (mapv
    (fn [step]
-     {:type (:so-step-type step)
-      :text (->> step
+     {::type (:so-step-type step)
+      ::text (->> step
                       :parts
                       (map (fn [[k x]]
                              (if (= :variable-name k) (get table-row x) x)))
-                      (s/join "")
-                      (s/trim))})
+                      (str/join "")
+                      (str/trim))})
    so-steps))
 
-(defn scenario-outline->scenarios
+(defn scen-outln->seq-step-maps
+  "Given a scenario outline parse tree and an examples table, return a sequence
+  of step maps. Each step map will have a `::steps` key and an
+  `::examples-row` key."
   [scenario-outline-tree examples-table]
   (let [so-steps
         (->> scenario-outline-tree
@@ -203,27 +237,28 @@
              (get-branches-matching-root-label :SO_STEP)
              (map pre-process-so-step))]
     (map
-     (fn [table-row] (interpolate so-steps table-row))
+     (fn [table-row]
+       {::steps (interpolate so-steps table-row)
+        ::examples-row table-row})
      examples-table)))
 
 (defn repair-conj-steps
-  "Repair any defective (:and and :but) :type values in steps by replacing the
+  "Repair any defective (:and and :but) ::type values in steps by replacing the
   defective value with the last non-defective one. Recursive because
   (map repair (cons nil steps) steps) fails when two or more 'conj' steps are
   adjacent."
   ([steps] (repair-conj-steps steps nil))
   ([[first-step & rest-steps] prev-step-type]
-   (let [first-step-type (:type first-step)
+   (let [first-step-type (::type first-step)
          first-step
          (if (some #{first-step-type} [:and :but])
            (-> first-step
-               (assoc :type prev-step-type)
-               (assoc :original-type first-step-type))
-           ;; (assoc first-step :type prev-step-type)
+               (assoc ::type prev-step-type)
+               (assoc ::original-type first-step-type))
            first-step)]
      (if rest-steps
-       (cons first-step (repair-conj-steps rest-steps (:type first-step)))
-       (list first-step)))))
+       (vec (cons first-step (repair-conj-steps rest-steps (::type first-step))))
+       [first-step]))))
 
 (defmulti process-scenario (fn [st] (first st)))
 
@@ -235,19 +270,20 @@
         description (get-scenario-outline-description scenario-outline-tree)
         examples (get-examples scenario-outline-tree)
         steps-sets
-        (scenario-outline->scenarios scenario-outline-tree (:table examples))]
+        (scen-outln->seq-step-maps scenario-outline-tree (::table examples))]
     (map
-     (fn [steps]
-       {:description description
-        :tags tags
-        :steps (repair-conj-steps steps)})
+     (fn [{:keys [::steps ::examples-row]}]
+       {::description description
+        ::examples-row examples-row
+        ::tags tags
+        ::steps (repair-conj-steps steps)})
      steps-sets)))
 
 (defmethod process-scenario :SCENARIO
   [scenario-tree]
-  [{:description (get-scenario-description scenario-tree)
-    :tags (get-scenario-tags scenario-tree)
-    :steps (-> scenario-tree
+  [{::description (get-scenario-description scenario-tree)
+    ::tags (get-scenario-tags scenario-tree)
+    ::steps (-> scenario-tree
                get-scenario-steps
                repair-conj-steps)}])
 
@@ -256,17 +292,53 @@
   (->> feature-tree
        (get-branches-matching-root-labels [:SCENARIO :SCENARIO_OUTLINE])
        (map process-scenario)
-       flatten))
+       flatten
+       vec))
 
 (defn parse
-  "Convert an Instaparse tree (vector) to data: a Clojure map that represents
-  the feature. It should have keys for name, description, tags and scenarios.
-  The value of scenarios should be a vector of scenario maps.
-  All scenario outlines should be evaluated to scenarios and placed, in order,
-  in the scenarios vector. "
+  "Convert a string of Gherkin into a maybe `::feature` map. First parses the
+  string into an Instaparse tree (a vector), then processes that tree to produce
+  the `::feature` map. All scenario outlines are converted to `::scenario`
+  maps and placed, in order,in the `::scenarios` collection."
   [feature-string]
-  (let [feature-tree (feature-prsr feature-string)
+  (let [feature-tree (grammar/feature-prsr feature-string)
         feature-block-map (process-feature-block feature-tree)
-        scenarios (extract-scenarios feature-tree)]
-    (merge feature-block-map
-           {:scenarios scenarios})))
+        scenarios (extract-scenarios feature-tree)
+        feature (assoc feature-block-map ::scenarios scenarios)]
+    feature
+    #_(if (s/valid? ::feature feature)
+      (u/just feature)
+      (u/nothing
+       {:error :invalid-feature
+        :data (s/explain-data ::feature feature)}))))
+
+(defn post-process-te
+  [parsed-te]
+  (if (string? parsed-te)
+    parsed-te
+    (let [root (first parsed-te)]
+      (if (= root :NEG)
+        (list 'not (post-process-te (second parsed-te)))
+        (conj (map post-process-te (rest parsed-te))
+              (get {:CONJ 'and :DISJ 'or} root))))))
+
+(defn parse-tag-expression-with
+  [parser te]
+  (let [parse (parser te)]
+    (when-not (failure? parse)
+      (-> parse first post-process-te))))
+
+(def parse-old-style-tag-expression
+  "Given an old-style tag expression like 'cat,~@dog,cow,~bunny', parse it into a
+  disjunction like ``(or cat (not dog) cow (not bunny))``."
+  (partial parse-tag-expression-with grammar/old-style-tag-expr-prsr))
+
+(def parse-tag-expression
+  "Given a tag expression like '@wip and not @slow' parse it into an unambiguous
+  ``:tegere.query/query-tree`` list like ``(and wip (not slow))``."
+  (partial parse-tag-expression-with grammar/tag-expression-cli-prsr))
+
+(defn parse-tag-expression-with-fallback
+  [te]
+  (or (parse-tag-expression te)
+      (parse-old-style-tag-expression te)))

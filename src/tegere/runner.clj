@@ -1,78 +1,119 @@
 (ns tegere.runner
   "Defines run, which runs a seq of features that match a supplied tags map,
   using the step functions defined in a supplied step-registry"
-  (:require [clojure.string :as s]
-            [clojure.set :refer [intersection]]
+  (:require [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [tegere.utils :as u]
-            [tegere.print :as tegprn]))
+            [tegere.parser :as p]
+            [tegere.print :as tegprn]
+            [tegere.query :as q]))
 
-(defn get-scenarios-matching-pred
-  "Return subset of scenarios matching pred according to their :all-tags key"
-  [scenarios pred]
-  (filter
-   (fn [{:keys [all-tags]}] (pred all-tags))
-   scenarios))
+(s/def ::stop boolean?)
+(s/def ::verbose boolean?)
+(s/def ::data (s/map-of keyword? string?))
+(s/def ::features-path string?)
+(s/def ::config
+  (s/keys :req [::stop
+                ::verbose
+                ::data
+                ::q/query-tree
+                ::features-path]))
+(s/def ::fn fn?)
+(s/def ::prev-feature ::p/feature)
+(s/def ::prev-scenario ::p/scenario)
 
-(defn get-scenarios-matching-all
-  "Return subset of scenarios that have all of the and-tags in the value of
-  their :all-tags keys"
-  [scenarios and-tags]
-  (get-scenarios-matching-pred
-   scenarios
-   (fn [all-tags]
-     (= and-tags (intersection all-tags and-tags)))))
+(s/def ::feature
+  (s/keys
+   :req [::p/name
+         ::p/description
+         ::p/tags]))
+(s/def ::scenario
+  (s/keys
+   :req [::p/description
+         ::p/tags]))
+(s/def ::executable
+  (s/keys
+   :req [::p/steps
+         ::feature
+         ::scenario]))
+(s/def ::executables (s/coll-of ::executable))
 
-(defn get-scenarios-matching-any
-  "Return subset of scenarios that have any of the or-tags in the value of
-  their :all-tags keys"
-  [scenarios or-tags]
-  (get-scenarios-matching-pred
-   scenarios
-   (fn [all-tags]
-     (seq (intersection all-tags or-tags)))))
+(s/def ::steps-passed integer?)
+(s/def ::steps-untested integer?)
+(s/def ::steps-failed integer?)
+(s/def ::executions-passed integer?)
+(s/def ::executions-failed integer?)
+(s/def ::scenarios-passed integer?)
+(s/def ::scenarios-failed integer?)
+(s/def ::features-passed integer?)
+(s/def ::features-failed integer?)
+(s/def ::outcome #{:pass :fail :error})
+(s/def ::analysis
+  (s/keys
+   :req [::steps-passed
+         ::steps-untested
+         ::steps-failed
+         ::executions-passed
+         ::executions-failed
+         #_::outcome]))
+(s/def ::feature-outcome
+  (s/map-of ::scenario ::analysis))
+(s/def ::run-outcome
+  (s/map-of ::feature ::feature-outcome))
+(s/def ::outcome-summary
+  (s/keys
+   :req [::features-passed
+         ::features-failed
+         ::scenarios-passed
+         ::scenarios-failed
+         ::steps-passed
+         ::steps-failed
+         ::steps-untested]))
+(s/def ::outcome-summary-report string?)
+(s/def ::start-time inst?)
+(s/def ::end-time inst?)
+(s/def ::ctx-after-exec (s/nilable map?))
+(s/def ::type ::outcome)
+(s/def ::message string?)
+(s/def ::stack-trace (s/coll-of string?))
+(s/def ::err
+  (s/nilable
+   (s/keys
+    :req [::type
+          ::message]
+    :opt [::stack-trace])))
+(s/def ::execution
+  (s/nilable
+   (s/keys
+    :req [::start-time
+          ::end-time
+          ::ctx-after-exec
+          ::err])))
 
-(defn project-tags
-  "Project the tags of feature to its scenario children under an :all-tags set
-  key. This makes tag-based matching easier."
-  [feature]
-  (let [feature-tags (get feature :tags ())
-        scenarios (:scenarios feature)]
-    (assoc feature
-           :scenarios
-           (map (fn [scen]
-                  (let [all-tags-set
-                        (set (concat feature-tags (:tags scen)))]
-                    (assoc scen :all-tags all-tags-set)))
-                scenarios))))
+(s/def ::run
+  (s/keys
+   :req [::outcome-summary
+         ::outcome-summary-report
+         ::executables]))
 
-(defn remove-non-matching-scenarios
-  "Return feature after removing all of its scenarios that do not match tags.
-  If there are and-tags, those take precedence. If there are neither and-tags
-  nor or-tags, then remove no scenarios."
-  [{:keys [and-tags or-tags]} {:keys [scenarios] :as feature}]
-  (let [matching-scenarios
-        (cond
-          (seq and-tags) (get-scenarios-matching-all scenarios and-tags)
-          (seq or-tags) (get-scenarios-matching-any scenarios or-tags)
-          :else scenarios)]
-    (assoc feature :scenarios matching-scenarios)))
-
-(defn features-are-empty
+(defn features-are-empty?
   "Return true if there are no scenarios in features"
   [features]
-  (->> features (map :scenarios) flatten seq nil?))
+  (->> features (map ::p/scenarios) flatten seq nil?))
+
+(defn ensure-some-features [features]
+  (if (features-are-empty? features)
+    (u/nothing "No features match the supplied tags")
+    (u/just features)))
 
 (defn get-features-to-run
-  "Return the features seq where each feature has had all of its scenarios
-  removed that do not match tags."
-  [tags features]
-  (->> features
-       (map project-tags)
-       (map (partial remove-non-matching-scenarios tags))
-       ((fn [features]
-          (if (features-are-empty features)
-            [nil "No features match the supplied tags"]
-            [features nil])))))
+  "Return the substructure of the ``features`` coll such that all
+  feature/scenario pairs within it match the supplied ``::tegere.query/query``
+  ``query``."
+  [query features]
+  (-> features
+      (q/query query)
+      ensure-some-features))
 
 (defn get-step-fn-args
   "Return a vector of arguments (strings) from step-text that match any patterns
@@ -85,7 +126,7 @@
   [step-fn-text step-text]
   (let [var-name-regex #"\{[-\w]+\}"
         step-fn-regex
-        (-> step-fn-text (s/replace var-name-regex "(.+)") re-pattern)
+        (-> step-fn-text (str/replace var-name-regex "(.+)") re-pattern)
         matches (re-find step-fn-regex step-text)]
     (if matches
       (if (sequential? matches) (rest matches) ())
@@ -98,7 +139,7 @@
   from the matching step text. If there are multiple matches, return the one with
   the longest step function text---a simple heuristic for the most specific
   match."
-  [step-registry {step-type :type step-text :text}]
+  [step-registry {step-type ::p/type step-text ::p/text}]
   (->> step-registry
        step-type
        (map (fn [[step-fn-text step-fn]]
@@ -112,37 +153,37 @@
        last))
 
 (defn add-step-fns-to-scenario
-  "Assign a step function, from step-registry, to each step map (under its :fn
+  "Assign a step function, from step-registry, to each step map (under its ::fn
   key) of scenario."
   [step-registry scenario]
   (assoc
    scenario
-   :steps
+   ::p/steps
    (map (fn [step]
-          (assoc step :fn (get-step-fn step-registry step)))
-        (:steps scenario))))
+          (assoc step ::fn (get-step-fn step-registry step)))
+        (::p/steps scenario))))
 
 (defn add-step-fns-to-feature
-  "Assign a step function, from step-registry, to each step map (under its :fn
+  "Assign a step function, from step-registry, to each step map (under its ::fn
   key) of each scenario of feature."
   [step-registry feature]
   (assoc feature
-         :scenarios
+         ::p/scenarios
          (map (partial add-step-fns-to-scenario step-registry)
-              (:scenarios feature))))
+              (::p/scenarios feature))))
 
 (defn get-missing-step-fns
   "Return the set of step maps in the features coll such that each step is
-  missing a step function under :fn."
+  missing a step function under ::fn."
   [features]
   (->> features
        (map (fn [feature]
               (->> feature
-                   :scenarios
+                   ::p/scenarios
                    (map (fn [scenario]
                           (->> scenario
-                               :steps
-                               (filter (fn [step] (nil? (:fn step))))))))))
+                               ::p/steps
+                               (filter (fn [step] (nil? (::fn step))))))))))
        flatten
        set))
 
@@ -151,12 +192,12 @@
   order to define the missing step functions."
   [missing-step-fns]
   (format "Please write step functions with the following signatures:\n%s"
-          (s/join "\n\n"
+          (str/join "\n\n"
                   (sort
                    (for [m missing-step-fns]
                      (format "(%s \"%s\" (fn [context] ...))"
-                             (-> m :type name s/capitalize)
-                             (:text m)))))))
+                             (-> m ::p/type name str/capitalize)
+                             (::p/text m)))))))
 
 (defn is-executable?
   "Return an error either if features are not executable, where the second item
@@ -165,11 +206,11 @@
   [features]
   (let [missing-step-fns (get-missing-step-fns features)]
     (if (seq missing-step-fns)
-      [nil (format-missing-step-fns missing-step-fns)]
-      [features nil])))
+      (u/nothing (format-missing-step-fns missing-step-fns))
+      (u/just features))))
 
 (defn add-step-fns
-  "Assign a step function, from step-registry, to each step map (under its :fn
+  "Assign a step function, from step-registry, to each step map (under its ::fn
   key) of each scenario of each feature in features."
   [step-registry features]
   (->> features
@@ -179,13 +220,13 @@
 (defn handle-step-fail
   [_ e]
   (let [exc (.getMessage e)]
-    [nil {:type :fail :message exc}]))
+    (u/nothing {::type :fail ::message exc})))
 
 (defn handle-step-error
   [_ e]
   (let [exc (.getMessage e)
         stack-trace (map str (.getStackTrace e))]
-    [nil {:type :error :message exc :stack-trace stack-trace}]))
+    (u/nothing {::type :error ::message exc ::stack-trace stack-trace})))
 
 (defn call-step-fn
   "Call the step function in step, passing in context ctx. Returns 2-vec where
@@ -193,7 +234,7 @@
   triggered an error or whether an assertion failed."
   [step ctx]
   (try
-    [((:fn step) ctx) nil]
+    (u/just ((::fn step) ctx))
     (catch AssertionError e
       (handle-step-fail step e))
     (catch Exception e
@@ -202,10 +243,10 @@
 (defn execute-step
   "Execute step by calling its step function on ctx; return a map documenting
   the execution of the step. Documents start and end times immediately before
-  and after the step is executed. Catches any exception and sets the :err key
+  and after the step is executed. Catches any exception and sets the ::err key
   to a string representation of the exception. The updated context will be set
-  to :ctx-after-exec. If the return value is not a map, we embed it in a map
-  under :step-retern-value."
+  to ::ctx-after-exec. If the return value is not a map, we embed it in a map
+  under :step-return-value."
   [step ctx]
   (let [start-time (java.util.Date.)
         [ctx-after-exec err] (call-step-fn step ctx)
@@ -215,161 +256,162 @@
           {:step-return-value ctx-after-exec}
           ctx-after-exec)]
     (tegprn/print-execution step err start-time end-time)
-    {:start-time start-time
-     :end-time end-time
-     :ctx-after-exec ctx-after-exec
-     :err err}))
+    {::start-time start-time
+     ::end-time end-time
+     ::ctx-after-exec ctx-after-exec
+     ::err err}))
 
 (defn execute-steps
   "Execute all steps in order by calling step-0 with ctx, then step-1 with the
-  output of step-0, etc. Recursive."
+  output of step-0, etc. Recursive. Each executed step will have an
+  ``::execution`` key."
   [ctx [first-step & rest-steps]]
   (let [execution (if (nil? ctx) nil (execute-step first-step ctx))
-        executed-step (assoc first-step :execution execution)]
+        executed-step (assoc first-step ::execution execution)]
     (if rest-steps
-      (cons executed-step (execute-steps (:ctx-after-exec execution) rest-steps))
+      (cons executed-step (execute-steps (::ctx-after-exec execution) rest-steps))
       (list executed-step))))
 
-(defn execute-steps-map
-  [ctx {:keys [steps] :as steps-map}]
+(defn execute-executable
+  [ctx {:keys [::p/steps] :as executable}]
   (println "")
-  (assoc steps-map
-         :steps
+  (assoc executable
+         ::p/steps
          (execute-steps ctx steps)))
 
-(defn get-steps-map-seq
-  "Return a lazy sequence of steps maps. These are maps with :steps keys.
-  There is one steps map for each scenario in each feature in the supplied
-  seq of features."
+(defn get-executables
+  "Return an ``::executables`` collection, i.e., a lazy sequence of
+  ``::executable`` maps. There is one ``::executable`` for each scenario in each
+  feature in the supplied coll of features."
   ([[first-feature & rest-features]]
-    (get-steps-map-seq first-feature rest-features (:scenarios first-feature)))
+    (get-executables first-feature rest-features (::p/scenarios first-feature)))
   ([first-feature features [first-scenario & rest-scenarios]]
    (lazy-seq
     (cons
-     {:steps (:steps first-scenario)
-      :feature (select-keys first-feature [:name :description :tags])
-      :scenario (select-keys first-scenario [:description :tags])}
+     {::p/steps (::p/steps first-scenario)
+      ::feature (select-keys first-feature [::p/name ::p/description ::p/tags])
+      ::scenario (select-keys first-scenario [::p/description ::p/tags])}
      (cond rest-scenarios
-           (get-steps-map-seq first-feature features rest-scenarios)
-           features (get-steps-map-seq features)
+           (get-executables first-feature features rest-scenarios)
+           features (get-executables features)
            :else nil)))))
 
-(defn step-executed-without-error
+(defn get-valid-executables
+  [features]
+  (let [executables (->> features
+                         get-executables
+                         (filter #(-> % ::p/steps some?)))]
+    (if (s/valid? ::executables executables)
+      (u/just executables)
+      (u/nothing
+       "Failed to construct a valid collection of executable scenarios."))))
+
+(defn executed-without-error?
   "Return true if the final step of the supplied steps map executed without
   error, false otherwise."
-  [executed-steps-map]
-  (let [final-step (-> executed-steps-map :steps last)]
-    (and (:execution final-step) (not (:err final-step)))))
+  [executed]
+  (let [final-step (-> executed ::p/steps last)]
+    (and (::execution final-step) (not (::err final-step)))))
 
-(defn execute-steps-map-seq
-  "Execute all of the 'steps maps' in the sequence thereof passed as the third
-  argument. Recursive so that we can break out of execution if a steps map fails."
-  [ctx
-   {:keys [stop last-feature last-scenario] :or {stop false} :as config}
-   [first-steps-map & rest-steps-maps]]
-  (let [feature (:feature first-steps-map)
-        scenario (:scenario first-steps-map)]
-    (when (or (nil? last-feature) (not= last-feature feature))
+(defn exec-executables
+  "Execute all of the ``::executable`` maps in the ``::executables`` collection
+  passed as the third argument. Recursive so that we can break out of execution
+  if an ``::executable`` fails."
+  [ctx {:keys [::stop ::prev-feature ::prev-scenario] :as config}
+   [executable & rest-executables]]
+  (let [feature (::feature executable)
+        scenario (::scenario executable)]
+    (when (or (nil? prev-feature) (not= prev-feature feature))
       (tegprn/print-feature feature))
-    (when (or (nil? last-scenario) (not= last-scenario scenario))
+    (when (or (nil? prev-scenario) (not= prev-scenario scenario))
       (tegprn/print-scenario scenario))
-    (let [executed-steps-map (execute-steps-map ctx first-steps-map)]
+    (let [executed (execute-executable ctx executable)]
       (cons
-       executed-steps-map
-       (if rest-steps-maps
-         (if (or (step-executed-without-error executed-steps-map) (not stop))
-           (execute-steps-map-seq
+       executed
+       (if rest-executables
+         (if (or (executed-without-error? executed) (not stop))
+           (exec-executables
             ctx
             (-> config
-                (assoc :last-feature feature)
-                (assoc :last-scenario scenario))
-            rest-steps-maps)
-           rest-steps-maps)
+                (assoc ::prev-feature feature)
+                (assoc ::prev-scenario scenario))
+            rest-executables)
+           rest-executables)
          nil)))))
+
+(defn execute-executables
+  [ctx config executables]
+  (u/just (exec-executables ctx config executables)))
 
 (defn execute
   "Execute each scenario within each feature of features by running all of the
   step functions of each scenario in order. Return a seq of 'steps maps', maps
   that describe a single step set of a single scenario. Each step of each steps
-  map each will contain an :execution key whose value is a map representing the
+  map each will contain an ::execution key whose value is a map representing the
   execution of the step. The stop param is a boolean; if true, then we will skip
   execution of subsequent steps after the first failure; if false, we run all
   step sets, ignoring previous failures."
   [initial-ctx stop features]
-  [(->> features
-        get-steps-map-seq
-        (filter #(-> % :steps some?))
-        ((partial execute-steps-map-seq initial-ctx {:stop stop})))
-   nil])
+  (let [executor (partial execute-executables initial-ctx {::stop stop})]
+    (u/err->> features
+              get-valid-executables
+              executor)))
 
-(defn analyze-step-execution
-  "Given a step execution map, return a reduced map containing the original
-  :feature and :scenario keys as well as a new :outcome key, whose value is a
+(defn analyze-executed-executable
+  "Given an executed ``::executable``, return a reduced map containing the
+  original ``::feature`` and ::scenario keys as well as a new ::outcome key, whose value is a
   keyword---:pass, :fail, or :error---indicating its outcome, and count keys
   detailing how many steps passed, failed and were untested."
-  [execution]
-  (let [steps (:steps execution)
-        executions (->> steps (map :execution) (filter some?))
-        last-err (->> executions last :err)
-        step-pass-count (count (filter #(nil? (:err %)) executions))
-        step-untested-count (- (count steps) (count executions))
-        step-fail-count (- (count steps) step-pass-count step-untested-count)
-        [execution-pass-count execution-fail-count]
+  [executable]
+  (let [steps (::p/steps executable)
+        executions (->> steps (map ::execution) (filter some?))
+        last-err (->> executions last ::err)
+        steps-passed (count (filter #(nil? (::err %)) executions))
+        steps-untested (- (count steps) (count executions))
+        steps-failed (- (count steps) steps-passed steps-untested)
+        [executions-passed executions-failed]
         (if (nil? last-err) [1 0] [0 1])]
-    (merge (select-keys execution [:feature :scenario])
-           {:step-pass-count step-pass-count
-            :step-untested-count step-untested-count
-            :step-fail-count step-fail-count
-            :execution-pass-count execution-pass-count
-            :execution-fail-count execution-fail-count
-            :outcome (get last-err :type :pass)})))
+    (merge (select-keys executable [::feature ::scenario])
+           {::steps-passed steps-passed
+            ::steps-untested steps-untested
+            ::steps-failed steps-failed
+            ::executions-passed executions-passed
+            ::executions-failed executions-failed
+            ::outcome (get last-err ::type :pass)})))
 
-(defn executions->outcome-map
-  "Convert a seq of execution maps (with keys :steps, :feature and :scenario) and
-  return an outcome map, which maps features (maps) to maps from scenarios (maps)
-  to maps that document step and execution pass/fail/untested counts."
-  [executions]
-  (->> executions
-       (map analyze-step-execution)
+(defn get-run-outcome
+  "Convert an ``::executables`` collection to a ``::run-outcome`` map. A
+  ``::run-outcome`` maps ``::feature`` maps to ``::feature-outcome`` maps, which
+  in turn map ``::scenario`` maps to ``::analysis`` maps."
+  [executables]
+  (->> executables
+       (map analyze-executed-executable)
        (reduce (fn [agg new]
                  (update-in
                   agg
-                  ((juxt :feature :scenario) new)
+                  ((juxt ::feature ::scenario) new)
                   (fn [existing-execution-analysis]
                     (merge-with
                      +
                      existing-execution-analysis
-                     (select-keys new [:step-pass-count
-                                       :step-untested-count
-                                       :step-fail-count
-                                       :execution-pass-count
-                                       :execution-fail-count])))))
+                     (select-keys new [::steps-passed
+                                       ::steps-untested
+                                       ::steps-failed
+                                       ::executions-passed
+                                       ::executions-failed])))))
                {})))
 
-(defn outcome-map->outcome-summary-map
-  "Convert an outcome map to an outcome summary map. An outcome map maps features
-  (themselves maps) to scenario maps, where a scenario map maps scenarios
-  (themselves maps) to a map from outcome keywords (:error) to integer counts::
+(def default-outcome-summary
+  {::steps-passed 0
+   ::steps-untested 0
+   ::steps-failed 0
+   ::scenarios-passed 0
+   ::scenarios-failed 0
+   ::features-passed 0
+   ::features-failed 0})
 
-      {{:name 'Monkeys behave as expected'
-        :description 'Experimenters want to ...'
-        :tags ['monkeys']}
-       {
-        {:description 'Monkeys behave as expected ...'
-         :tags ['fruit-reactions']}
-        {:error 2, :fail 2}}}
-
-  The output is a much simpler data structure that summarizes the counts of
-  features, scenarios and steps that passed and failed::
-
-       {:feature-pass-count n
-        :feature-fail-count n
-        :scenario-pass-count n
-        :scenario-fail-count n
-        :step-pass-count n
-        :step-fail-count n
-        :step-untested-count n}
-  "
+(defn get-outcome-summary
+  "Given a ``::run-outcome``, return an ``::outcome-summary``."
   [outcome-map]
   (reduce
    (fn [agg [_ scenarios]]
@@ -379,40 +421,31 @@
            (->> scenarios
                 vals
                 (map (fn [step-stats-map]
-                       (if (= 0 (:execution-fail-count step-stats-map))
-                         {:scenario-pass-count 1
-                          :scenario-fail-count 0}
-                         {:scenario-pass-count 0
-                          :scenario-fail-count 1})))
+                       (if (= 0 (::executions-failed step-stats-map))
+                         {::scenarios-passed 1 ::scenarios-failed 0}
+                         {::scenarios-passed 0 ::scenarios-failed 1})))
                 (apply merge-with +))
            feature-stats
-           (if (= 0 (:scenario-fail-count scenarios-stats))
-                  {:feature-pass-count 1 :feature-fail-count 0}
-                  {:feature-pass-count 0 :feature-fail-count 1})]
+           (if (= 0 (::scenarios-failed scenarios-stats))
+                  {::features-passed 1 ::features-failed 0}
+                  {::features-passed 0 ::features-failed 1})]
        (merge-with +
                    agg
-                   (select-keys steps-stats [:step-pass-count
-                                             :step-fail-count
-                                             :step-untested-count])
+                   (select-keys steps-stats
+                                [::steps-passed ::steps-failed ::steps-untested])
                    scenarios-stats
                    feature-stats)))
-   {:step-pass-count 0
-    :step-untested-count 0
-    :step-fail-count 0
-    :scenario-pass-count 0
-    :scenario-fail-count 0
-    :feature-pass-count 0
-    :feature-fail-count 0}
+   default-outcome-summary
    outcome-map))
 
-(defn format-outcome-summary-map
+(defn get-outcome-summary-report
   "Convert a map summarizing the output of running the features to a
   human-readable string summarizing the same information. Input is something
   like::
 
-      {:features {:passed 0 :failed 1}
-       :scenarios {:passed 0 :failed 1}
-       :steps {:passed 0 :failed 4}}
+      {::features {:passed 0 :failed 1}
+       ::scenarios {:passed 0 :failed 1}
+       ::p/steps {:passed 0 :failed 4}}
 
   and the corresponding output would be::
 
@@ -427,45 +460,68 @@
       0 scenarios passed, 1 failed, ??? skipped, ??? untested
       0 steps passed, 4 failed, ??? skipped, ??? undefined, 2 untested
   "
-  [outcome-summary-map]
+  [{:keys [::features-passed ::features-failed
+           ::scenarios-passed ::scenarios-failed
+           ::steps-passed ::steps-failed ::steps-untested]}]
   (format
    (str "\n%s features passed, %s failed"
         "\n%s scenarios passed, %s failed"
         "\n%s steps passed, %s failed, %s untested\n")
-   (:feature-pass-count outcome-summary-map)
-   (:feature-fail-count outcome-summary-map)
-   (:scenario-pass-count outcome-summary-map)
-   (:scenario-fail-count outcome-summary-map)
-   (:step-pass-count outcome-summary-map)
-   (:step-fail-count outcome-summary-map)
-   (:step-untested-count outcome-summary-map)))
+   features-passed features-failed
+   scenarios-passed scenarios-failed
+   steps-passed steps-failed steps-untested))
 
-(defn get-outcome-summary
-  "Return a string representation of the outcome of running all of the features.
-  Something like:
+(defn validate-run-outcome
+  [run-outcome]
+  (if (s/valid? ::run-outcome run-outcome)
+    run-outcome
+    (throw (AssertionError. (u/pp-str run-outcome)))))
 
-  0 features passed, 1 failed
-  0 scenarios passed, 1 failed
-  0 steps passed, 4 failed, 1 untested
-  "
-  [executions & {:keys [as-data?] :or {as-data? false}}]
-  (->> executions
-       executions->outcome-map
-       outcome-map->outcome-summary-map
-       ((fn [i]
-         (if as-data? i (format-outcome-summary-map i))))))
+(defn summarize-run
+  "Given an ``::executables`` collection, return a map with spec-conformant keys
+  ``::outcome-summary`` and ``::outcome-summary-report``, the latter being a
+  string like:
+
+      0 features passed, 1 failed
+      0 scenarios passed, 1 failed
+      0 steps passed, 4 failed, 1 untested"
+  [executables]
+  (let [outcome-summary (->> executables
+                             get-run-outcome
+                             validate-run-outcome
+                             get-outcome-summary)]
+    {::outcome-summary outcome-summary
+     ::outcome-summary-report (get-outcome-summary-report outcome-summary)}))
+
+(defn validate-executables
+  [executables]
+  (if (s/valid? ::executables executables)
+    (u/just executables)
+    (u/nothing
+     (format
+      "Failed to construct a valid collection of executables. Error:\n%s"
+      (s/explain-str ::executables executables)))))
+
+(defn construct-run [executables]
+  (u/just (assoc (summarize-run executables) ::executables executables)))
 
 (defn run
   "Run seq of features matching tags using the step functions defined in
-  step-registry"
-  [features step-registry {:keys [tags stop] :or {tags {} stop false}}
-   & {:keys [initial-ctx] :or {initial-ctx {}}}]
-  (let [[outcome err] (u/err->> features
-                                (partial get-features-to-run tags)
-                                (partial add-step-fns step-registry)
-                                (partial execute initial-ctx stop))]
-    (if err
-      (do (println err)
-          err)
-      (do (println (get-outcome-summary outcome))
-          outcome))))
+  step-registry. Return a ``::run`` map representing the result of running the
+  features."
+  ([features step-registry] (run features step-registry {}))
+  ([features step-registry {query ::q/query-tree stop ::stop}
+    & {:keys [initial-ctx] :or {initial-ctx {}}}]
+   (u/just-then-esc
+    (u/err->> features
+              (partial get-features-to-run query)
+              (partial add-step-fns step-registry)
+              (partial execute initial-ctx stop)
+              validate-executables
+              construct-run)
+    (fn [{:keys [::outcome-summary-report] :as run-ret}]
+      (println outcome-summary-report)
+      run-ret)
+    (fn [error]
+      (println error)
+      error))))

@@ -1,105 +1,149 @@
 (ns tegere.cli
-  "The Command-Line Interface (CLI) for TeGere. What allows you to call
-  `tegere --tags=monkey --stop` from a command line."
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as str]
+            [clojure.tools.cli :as cli]
+            [me.raynes.fs :as fs]
+            [tegere.grammar :refer [old-style-tag-expr-prsr]]
+            [tegere.parser :as p]
+            [tegere.runner :as r]
+            [tegere.query :as q]))
 
-(defn split-by-comma [string] (s/split string #",\s*"))
+(defn- update-with-merge [opts id val]
+  (update opts id merge val))
 
-(defn l-trim-hyph
-  "Left-trim hyphens: '--stop-thing-' => 'stop-thing-'"
-  [string]
-  (-> string
-      (s/replace #"^-+(.*)$" "$1")))
+(defn- parse-data [data]
+  (let [[k v] (str/split data #"=" 2)]
+    {(keyword k) v}))
 
-(defn format-arg-val-by-name
-  [arg-val arg-name]
-  (if (true? arg-val)
-    arg-val
-    (if (= arg-name :tags)
-      (set (split-by-comma arg-val))
-      arg-val)))
+(defn conjoin-tag-expression
+  "Conjoin ``val`` to existing ``::q/query-tree`` at ``id`` of ``opts`` using
+  ``'and``."
+  [opts id val]
+  (assoc opts id
+         (if-let [existing-query-tree (id opts)]
+           (list 'and val existing-query-tree)
+           val)))
 
-(defn format-arg-val-by-name-old
-  [arg-val arg-name]
-  (if (true? arg-val)
-    arg-val
-    (if (= arg-name :tags)
-      (let [or-parts (split-by-comma arg-val)
-            [_ & rest-or-parts] or-parts]
-        (if rest-or-parts or-parts arg-val))
-      arg-val)))
+(def cli-options
+  [["-h" "--help"]
+   ["-s" "--stop" :default false :id ::r/stop]
+   ["-v" "--verbose" :default false :id ::r/verbose]
+   ;; Transform --tags values into a ::q/query-try for datascript-based query.
+   ["-t" "--tags TAGS" "Tags to control which features are executed"
+    :assoc-fn conjoin-tag-expression
+    :parse-fn p/parse-tag-expression-with-fallback
+    :id ::q/query-tree]
+   ["-D" "--data KEYVAL" "Data in key=val format to pass to Apes Gherkin"
+    :assoc-fn update-with-merge
+    :parse-fn parse-data
+    :id ::r/data]])
 
-(defn parse-arg-name
-  [arg-name]
-  (if (s/starts-with? arg-name "-")
-    [:kwargs (-> arg-name l-trim-hyph keyword)]
-    [:args arg-name]))
+(defn usage [options-summary]
+  (->> ["TeGere Runner."
+        ""
+        "Usage: tegere-runner [options] features-path"
+        ""
+        "Options:"
+        options-summary
+        ""
+        "features-path: path to directory with Gherkin feature files."]
+       (str/join \newline)))
 
-(defn parse-arg
-  "Parse str arg into 2-vec of attribute and value.
-  Supports 'arg', '--opt=val', '-opt=val', and '--flag' type arguments."
-  [arg]
-  (let [raw (s/split arg #"=")
-        [arg-type arg-name] (parse-arg-name (first raw))]
-    [arg-type arg-name
-     (-> raw second (or true) (format-arg-val-by-name arg-name))]))
+(defn error-msg [errors]
+  (str "The following errors occurred while parsing your command:\n\n"
+       (str/join \newline errors)))
 
-(defn vectorize-merger
-  "Assoc arg-val to agg under arg-name. If arg-name was already present, put the
-  old value and the new value into a vector as the value."
-  [agg arg-name arg-val]
-  (assoc agg
-         arg-name
-         (if-let [existing-val (arg-name agg)]
-           (->> arg-val (conj [existing-val]) flatten (apply vector))
-           arg-val)))
+(defn features-path-exists?
+  [features-path]
+  (and features-path (fs/directory? features-path)))
 
-(defn set-union-merge
-  [agg arg-name arg-vals]
-  (assoc agg
-         arg-name
-         (if-let [existing-val (get agg arg-name)]
-           (set (concat existing-val arg-vals))
-           arg-vals)))
+(def default-config
+  {::r/stop false
+   ::r/verbose false
+   ::r/data {}
+   ::q/query-tree nil
+   ::r/features-path "."})
 
-(defn or-merge
-  [agg arg-name arg-vals]
-  (let [or-arg-name (->> arg-name name (format "or-%s") keyword)]
-    (set-union-merge agg or-arg-name arg-vals)))
+(defn validate-args
+  "Validate command line arguments. Either return a map indicating the program
+  should exit (with a error message, and optional ok status), or a
+  ``:tegere.runner/config``config map."
+  ([args] (validate-args args cli-options))
+  ([args cli-options]
+   (let [{:keys [options arguments errors summary]}
+         (cli/parse-opts args cli-options)
+         config (merge default-config
+                       {::r/features-path (or (first arguments) ".")}
+                       options)]
+     (cond
+       (:help options) ; help => exit OK with usage summary
+       {:exit-message (usage summary) :ok? true}
+       errors ; errors => exit with description of errors
+       {:exit-message (error-msg errors)}
+       (features-path-exists? (::r/features-path config))
+       config
+       :else ; failed custom validation => exit with usage summary
+       {:exit-message (format "There is no directory at path %s."
+                              (::r/features-path config))}))))
 
-(defn and-merge
-  [agg arg-name arg-vals]
-  (let [and-arg-name (->> arg-name name (format "and-%s") keyword)]
-    (set-union-merge agg and-arg-name arg-vals)))
+(comment
 
-(defn and-or-merger
-  "Set a variant of arg-name on map agg to a value computed using arg-val."
-  [agg arg-name arg-val]
-  (if (> (count arg-val) 1)
-    (or-merge agg arg-name arg-val)
-    (and-merge agg arg-name arg-val)))
+  (validate-args ["--help"])
 
-;; Map special argument names to special merger functions. The "tags" argument
-;; is special in TeGere.
-(def mergers-by-arg-name
-  {:tags and-or-merger})
+  (validate-args ["blargon"])
 
-(defn add-arg-to-agg
-  [agg arg]
-  (let [[arg-type arg-name arg-val] (parse-arg arg)
-        merger (get mergers-by-arg-name arg-name vectorize-merger)]
-    (if (= arg-type :args)
-      (update agg :args conj arg-name)
-      (update agg :kwargs merger arg-name arg-val))))
+  (validate-args ["examples/apes/src/apes/features" "--stop"])
 
-(defn simple-cli-parser
-  "Parse seq of strings to dict of keyword-arguments. This:
+  (validate-args
+   ["examples/apes/src/apes/features" "-Durl=http://www.url.com"
+    "-Dpassword=1234" "--tags=chimpanzees"])
 
-      arg --opt=val -opt-2=val --flag
+  (validate-args
+   ["-Durl=http://www.url.com" "-Dpassword=1234" "--tags=dogs" "--tags=chimpanzees"
+    "examples/apes/src/apes/features"])
 
-  becomes:
+  (validate-args
+   ["-Durl=http://www.url.com" "-Dpassword=1234" "--stop" "--tags=dogs"
+    "--tags=chimpanzees" "examples/apes/src/apes/features"])
 
-      {arg true, opt val, opt-2 val, flag true}
-  "
-  [args]
-  (reduce add-arg-to-agg {:args [] :kwargs {}} args))
+  (validate-args
+   ["examples/apes/src/apes/features" "-Durl=http://www.url.com"
+    "-Dpassword=1234" "--stop" "--tags=dogs" "--tags=chimpanzees"])
+
+  (validate-args
+   ["examples/apes/src/apes/features" "-Durl=http://www.url.com"
+    "-Dpassword=1234" "--stop" "--tags=dogs" "--tags=chimpanzees"
+    "--tags=apple,orange,papaya"])
+
+  (validate-args
+   ["examples/apes/src/apes/features" "-Durl=http://www.url.com"
+    "-Dpassword=1234" "--stop" "--tags=dogs" "--tags=chimpanzees"
+    "--tags=apple,orange,papaya" "--tags=apple,orange,banana"])
+
+  (old-style-tag-expr-prsr "cat,~@dog,cow,~bunny")
+
+  (= '(and (not "ant")
+           (and "rat"
+                (or "cat" (not "dog") "cow" (not "bunny"))))
+     (-> (validate-args ["examples/apes/src/apes/features"
+                         "--tags=cat,~@dog,cow,~bunny"
+                         "--tags=rat"
+                         "--tags=~@ant"
+                         ])
+         ::q/query-tree))
+
+  (-> (validate-args
+       ["examples/apes/src/apes/features"
+        "--tags=cow,chicken"
+        "--tags=not @a or @b and not @c or not @d or @e and @f"])
+      ::q/query-tree)
+
+  (validate-args
+   ["examples/apes/src/apes/features"
+    "--tags=cow,chicken"
+    "--tags=not @a or @b and not @c or not @d or @e and @f"
+    "-Durl=http://api.example.com"
+    "--data=password=secret"
+    "--stop"
+    "--verbose"])
+
+)

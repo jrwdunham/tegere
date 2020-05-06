@@ -18,27 +18,26 @@
           (->> nodes
                (filter (fn [n] (= (first n) :SCENARIO_OUTLINE)))
                first)]
-      (do
-        (t/is (= (type parse) clojure.lang.PersistentVector))
-        (t/is (= :FEATURE root-label))
-        (t/is (=
+      (t/is (= (type parse) clojure.lang.PersistentVector))
+      (t/is (= :FEATURE root-label))
+      (t/is (=
              #{:IGNORED_LINE :SCENARIO_OUTLINE :FEATURE_BLOCK}
              (set (map first nodes))))
-        (t/is (=
-               [:FEATURE_BLOCK
-                :SCENARIO_OUTLINE
-                :SCENARIO_OUTLINE
-                :SCENARIO_OUTLINE
-                :SCENARIO_OUTLINE]
+      (t/is (=
+             [:FEATURE_BLOCK
+              :SCENARIO_OUTLINE
+              :SCENARIO_OUTLINE
+              :SCENARIO_OUTLINE
+              :SCENARIO_OUTLINE]
              (->> nodes
                   (map first)
                   (filter (fn [x] (not= x :IGNORED_LINE))))))
-        (t/is (=
+      (t/is (=
              :SCENARIO_OUTLINE_LINE
              (-> first-scenario-outline (nth 2) first)))
-        (t/is (=
+      (t/is (=
              first-scenario-outline-text
              (-> first-scenario-outline
                  (nth 2)
                  (nth 3)
-                 second)))))))
+                 second))))))
