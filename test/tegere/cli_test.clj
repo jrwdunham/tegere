@@ -54,33 +54,33 @@
           expectations
           [[["--tags=bonobos,@chimpanzees"
              "--tags=orangutan,~@fruit=banana"]
-            [#{"fruit=pear"
-               "chimpanzees"
-               "fruit-reactions"
-               "response=sad"
-               "manner_of_looking=loathingly"}
-             #{"chimpanzees"
-               "orangutan"}
-             #{"fruit=pear"
-               "fruit-reactions"
-               "bonobos"
-               "manner_of_looking=indifferently"
-               "response=indifferent"}
-             #{"bonobos"
-               "orangutan"}]]
+            #{#{"fruit=pear"
+                "chimpanzees"
+                "fruit-reactions"
+                "response=sad"
+                "manner_of_looking=loathingly"}
+              #{"chimpanzees"
+                "orangutan"}
+              #{"fruit=pear"
+                "fruit-reactions"
+                "bonobos"
+                "manner_of_looking=indifferently"
+                "response=indifferent"}
+              #{"bonobos"
+                "orangutan"}}]
            [["--tags=((@fruit=banana and @chimpanzees) or ((not @fruit=banana) and @bonobos))"]
-            [#{"manner_of_looking=quizzically"
-               "chimpanzees"
-               "fruit-reactions"
-               "response=happy"
-               "fruit=banana"}
-             #{"fruit=pear"
-               "fruit-reactions"
-               "bonobos"
-               "manner_of_looking=indifferently"
-               "response=indifferent"}
-             #{"bonobos"
-               "orangutan"}]]]]
+            #{#{"manner_of_looking=quizzically"
+                "chimpanzees"
+                "fruit-reactions"
+                "response=happy"
+                "fruit=banana"}
+              #{"fruit=pear"
+                "fruit-reactions"
+                "bonobos"
+                "manner_of_looking=indifferently"
+                "response=indifferent"}
+              #{"bonobos"
+                "orangutan"}}]]]
       (doseq [[tags expected] expectations]
         (let [query-tree
               (-> (sut/validate-args
@@ -88,5 +88,7 @@
                   :tegere.query/query-tree)
               actual (->> (q/query features query-tree)
                           u/extract-all-scenario-tags
-                          (map set))]
+                          (map set)
+                          set)]
           (t/is (= expected actual)))))))
+
