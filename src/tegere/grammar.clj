@@ -41,11 +41,27 @@
 
 (def step-label-prsr (insta/parser step-label-grmr))
 
+(def step-data-grmr
+  (str
+   "STEP_DATA = STEP_DATA_ROW+\n"
+   "STEP_DATA_ROW = !( INDENT STEP_LABEL ) STEP_DATA_CELL+ <CELL_DELIM> <NEW_LINE>\n"
+   "STEP_DATA_CELL = <INDENT> <CELL_DELIM> #'[^\\n|]+'\n"
+   "CELL_DELIM = '|'\n"))
+
+(def variable-grmr
+  (str
+   "VARIABLE = <VLB> VARIABLE_NAME <VRB>\n"
+   "VLB = '<'\n"
+   "<VARIABLE_NAME> = #'\\w+'\n"
+   "VRB = '>'\n"))
+
 (def step-grmr
   (str
-   "STEP = INDENT STEP_LABEL STEP_TEXT NEW_LINE\n"
+   "STEP = <INDENT> STEP_LABEL STEP_TEXT STEP_DATA?\n"
+   "STEP_TEXT = STEP_LINE+\n"
+   "<STEP_LINE> = !( INDENT ( STEP_LABEL | '|' ) ) #'[^\\n]+' <NEW_LINE>\n"
+   step-data-grmr
    indent-grmr
-   "STEP_TEXT = #'[^\\n]+'\n"
    step-label-grmr
    new-line-grmr))
 
@@ -56,13 +72,14 @@
 ;; "Given a <modifier> chimpanzee".
 (def so-step-grmr
   (str
-   "SO_STEP = INDENT STEP_LABEL (VARIABLE | STEP_TEXT)+ NEW_LINE\n"
+   "SO_STEP = <INDENT> STEP_LABEL SO_STEP_TEXT STEP_DATA?\n"
+   "SO_STEP_TEXT = SO_STEP_LINE+\n"
+   "<SO_STEP_LINE> = !( INDENT ( STEP_LABEL | '|' ) )"
+   "  ( VARIABLE | SO_STEP_STR )+ <NEW_LINE>\n"
+   "SO_STEP_STR = #'[^\\n<>]+'\n"
+   variable-grmr
+   step-data-grmr
    indent-grmr
-   "VARIABLE = VLB VARIABLE_NAME VRB\n"
-   "VLB = '<'\n"
-   "VARIABLE_NAME = #'\\w+'\n"
-   "VRB = '>'\n"
-   "STEP_TEXT = #'[^\\n<>]+'\n"
    step-label-grmr
    new-line-grmr))
 
@@ -141,9 +158,9 @@
 
 (def table-row-grmr
   (str
-   "TABLE_ROW = INDENT BORDER CELL (BORDER CELL)* BORDER INDENT NEW_LINE\n"
+   "TABLE_ROW = INDENT ( CELL_DELIM CELL )+ CELL_DELIM INDENT NEW_LINE\n"
    indent-grmr
-   "BORDER = '|'\n"
+   "CELL_DELIM = '|'\n"
    "CELL = #'[^\\n\\|]+'\n"
    new-line-grmr))
 

@@ -1,5 +1,6 @@
 (ns tegere.parser-test
   (:require [tegere.parser :as sut]
+            [clojure.spec.alpha :as s]
             [clojure.test :as t]))
 
 (t/deftest feature-file-semantics-test
@@ -51,3 +52,47 @@
            ["cat,~@dog,cow,~bunny" '(or "cat" (not "dog") "cow" (not "bunny"))]]]
       (doseq [[input expectation] expectations]
         (t/is (= (sut/parse-tag-expression-with-fallback input) expectation))))))
+
+(t/deftest step-data-and-linebreaks
+  (t/testing "Steps can have associated data and can contain linebreaks"
+    (let [real-feature
+          (slurp (.getPath (clojure.java.io/resource "sample3.feature")))
+          feature-map (sut/parse real-feature)
+          [s1 s2 s3 s4 s5 s6 :as scenarios] (::sut/scenarios feature-map)]
+      (t/is (= (::sut/name feature-map)
+               "Step data and linebreaks in Scenarios and Scenario Outlines"))
+      (t/is (= (::sut/description feature-map)
+               (str "Step data is parsed correctly in Scenarios and Scenario"
+                    " Outlines. Also, steps can contain linebreaks.")))
+      (t/is (= (::sut/tags feature-map) []))
+      (t/is (= (count scenarios) 6))
+      (t/is (= (-> s1 ::sut/steps first ::sut/text)
+               "a blargon synchronized between Mufu and Bugu"))
+      (t/is (= (-> s1 ::sut/steps first ::sut/step-data first :owner_id) "13"))
+      (t/is (= (-> s2 ::sut/steps first ::sut/text)
+               "a blorgon synchronized between Mufu and Bugu"))
+      (t/is (= (-> s2 ::sut/steps first ::sut/step-data second :environment)
+               "staging"))
+      (t/is (= (-> s3 ::sut/steps first ::sut/text)
+               "an Inspector Spacetime with attributes"))
+      (t/is (= (-> s3 ::sut/steps first ::sut/step-data first :loquacious?)
+               "nope"))
+      (t/is (= (-> s3 ::sut/steps second ::sut/step-data first :speed-of-light)
+               "299 792 458 m / s"))
+      (t/is (nil? (-> s4 ::sut/steps first ::sut/step-data)))
+
+      (t/is (= (-> s5 ::sut/steps first ::sut/text)
+               "a blargon synchronized between Mufu and Bugu"))
+      (t/is (nil? (-> s5 ::sut/steps first ::sut/step-data)))
+      (t/is (= (-> s6 ::sut/steps first ::sut/text)
+               "a blorgon synchronized between Mufu and Bugu"))
+      (t/is (nil? (-> s6 ::sut/steps first ::sut/step-data))))))
+
+(t/deftest parsed-features-conform-to-spec
+  (t/testing "All parsed .feature files are spec-conformant ::sut/feature maps"
+    (let [f1 (-> "sample.feature" clojure.java.io/resource .getPath slurp sut/parse)
+          f2 (-> "sample2.feature" clojure.java.io/resource .getPath slurp sut/parse)
+          f3 (-> "sample3.feature" clojure.java.io/resource .getPath slurp sut/parse)]
+      (t/is (s/valid? ::sut/feature f1))
+      (t/is (s/valid? ::sut/feature f2))
+      (t/is (s/valid? ::sut/feature f3)))))
