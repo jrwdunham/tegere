@@ -240,11 +240,14 @@ To run tests specific to a single namespace, e.g., ``tegere.grammar``:
 
        $ clj -A:test -n tegere.grammar-test
 
-To run a specific ``deftest``:
+Examples of running specific ``deftest`` expressions:
 
 .. code-block:: bash
 
        $ clj -A:test -n tegere.runner-test -v tegere.runner-test/can-run-simple-feature-test
+       $ clj -A:test -n tegere.grammar-test -v tegere.grammar-test/step-block-parse-test
+       $ clj -A:test -n tegere.parser-test -v tegere.parser-test/step-data-and-linebreaks
+       $ clj -A:test -n tegere.parser-test -v tegere.parser-test/parsed-features-conform-to-spec
 
 
 License
