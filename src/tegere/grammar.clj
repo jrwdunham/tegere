@@ -52,7 +52,7 @@
   (str
    "VARIABLE = <VLB> VARIABLE_NAME <VRB>\n"
    "VLB = '<'\n"
-   "<VARIABLE_NAME> = #'\\w+'\n"
+   "<VARIABLE_NAME> = #'[a-zA-Z_0-9\\?-]+'\n"
    "VRB = '>'\n"))
 
 (def step-grmr

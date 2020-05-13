@@ -1,7 +1,8 @@
 (ns tegere.runner
   "Defines run, which runs a seq of features that match a supplied tags map,
   using the step functions defined in a supplied step-registry"
-  (:require [clojure.spec.alpha :as s]
+  (:require [clojure.pprint :as pprint]
+            [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [tegere.utils :as u]
             [tegere.parser :as p]
@@ -124,9 +125,9 @@
   'I saw {fruit-type}' 'I ate a banana' => nil
   'I ate a pear'       'I ate a banana' => nil"
   [step-fn-text step-text]
-  (let [var-name-regex #"\{[-\w]+\}"
+  (let [var-name-regex #"\{[a-zA-Z_0-9\\?-]+\}"
         step-fn-regex
-        (-> step-fn-text (str/replace var-name-regex "(.+)") re-pattern)
+        (-> step-fn-text (str/replace var-name-regex "(.*)") re-pattern)
         matches (re-find step-fn-regex step-text)]
     (if matches
       (if (sequential? matches) (rest matches) ())
@@ -234,7 +235,7 @@
   triggered an error or whether an assertion failed."
   [step ctx]
   (try
-    (u/just ((::fn step) ctx))
+    (u/just ((::fn step) (assoc ctx ::p/step step)))
     (catch AssertionError e
       (handle-step-fail step e))
     (catch Exception e
