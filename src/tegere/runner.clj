@@ -219,12 +219,12 @@
        is-executable?))
 
 (defn handle-step-fail
-  [_ e]
+  [_ ^Throwable e]
   (let [exc (.getMessage e)]
     (u/nothing {::type :fail ::message exc})))
 
 (defn handle-step-error
-  [_ e]
+  [_ ^Throwable e]
   (let [exc (.getMessage e)
         stack-trace (map str (.getStackTrace e))]
     (u/nothing {::type :error ::message exc ::stack-trace stack-trace})))

@@ -1,4 +1,7 @@
 (ns tegere.cli
+  "A simple command-line interface that may be used by a TeGere-using project.
+  Defines validate-args which can convert prescriptively valid command-line
+  arguments into a ``:tegere.runner/config`` config map."
   (:require [clojure.string :as str]
             [clojure.tools.cli :as cli]
             [me.raynes.fs :as fs]
@@ -27,7 +30,7 @@
   [["-h" "--help"]
    ["-s" "--stop" :default false :id ::r/stop]
    ["-v" "--verbose" :default false :id ::r/verbose]
-   ;; Transform --tags values into a ::q/query-try for datascript-based query.
+   ;; Transform --tags values into a ::q/query-tree for datascript-based query.
    ["-t" "--tags TAGS" "Tags to control which features are executed"
     :assoc-fn conjoin-tag-expression
     :parse-fn p/parse-tag-expression-with-fallback
@@ -66,7 +69,7 @@
 (defn validate-args
   "Validate command line arguments. Either return a map indicating the program
   should exit (with a error message, and optional ok status), or a
-  ``:tegere.runner/config``config map."
+  ``:tegere.runner/config`` config map."
   ([args] (validate-args args cli-options))
   ([args cli-options]
    (let [{:keys [options arguments errors summary]}
