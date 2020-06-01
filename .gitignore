@@ -2,13 +2,13 @@
 /classes
 /checkouts
 profiles.clj
-pom.xml
 pom.xml.asc
 *.jar
 *.class
 /.lein-*
 /.nrepl-port
 /examples/apes/.nrepl-port
+/examples/apes/target/
 .hgignore
 .hg/
 private/

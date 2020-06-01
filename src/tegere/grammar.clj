@@ -1,9 +1,18 @@
 (ns tegere.grammar
-  "Feature file grammar. Specifies a simple context-free grammar (CFG) for
-  Gherkin feature files. This grammar (feature-grmr) is passed to
-  instaparse.core/parser in order to build a parser that parses a feature
-  file (a string of text) into structured data, viz. a vector-based tree
-  structure."
+  "This namespace contains Instaparse CFG (or PEG) grammars (and parsers derived
+  therefrom) that are used by TeGere. The primary grammar is ``feature-prsr``,
+  which describes Gherkin feature files. However, PSGs are also used to parse the
+  tag expressions that may be passed at the command line, hence:
+  ``tag-expression-cli-prsr`` and ``old-style-tag-expr-prsr``.
+
+  Note that the outputs of these grammars typically require post-processing in
+  order to arrive at specification-compliant Clojure data structures. For that
+  post-processing work, see the ``tegere.parser`` ns.
+
+  Final note: the grammars here could all be defined in one go as single ``def``
+  statements. The present convention of breaking the grammars up into smaller
+  sub-grammars is in part a vestige of how they were developed, viz., iteratively
+  and via the REPL."
   (:require [clojure.string :as string]
             [instaparse.core :as insta]))
 

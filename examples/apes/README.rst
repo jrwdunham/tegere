@@ -98,3 +98,28 @@ Note that the tag search expression grammar gives operator precedence to
 disjunction over conjunction, so the above tag expression is equivalent to::
 
     (@chimpanzees and @fruit=banana) or (@bonobos and @orangutan)
+
+
+Build a Native Image using GraalVM
+================================================================================
+
+Run the following to create a native image of the Apes testing system at
+``target/apes``::
+
+    $ clojure -A:depstar -m hf.depstar.uberjar target/apes.jar -C -m apes.core
+    $ native-image \
+          --report-unsupported-elements-at-runtime \
+          --no-server \
+          --initialize-at-build-time \
+          -jar ./target/apes.jar \
+          -H:Name=./target/apes
+
+Now we should be able to run the Apes tests with a fast startup time::
+
+    $ ./target/apes src/apes/features/ \
+          --tags='@chimpanzees and @fruit=banana or @bonobos and @orangutan'
+    2 features passed, 0 failed
+    2 scenarios passed, 0 failed
+    8 steps passed, 0 failed, 0 untested
+
+        0.06 real         0.03 user         0.01 sys

@@ -2,9 +2,17 @@
   "Functionality for loading feature files."
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
-            [tegere.parser :as parser]
-            #_[tegere.utils :as u])
+            [tegere.parser :as parser])
   (:import java.io.File))
+
+(defn- is-file? [^java.io.File f] (.isFile f))
+
+(defn- file->path-str [^java.io.File f] (str (.toPath f)))
+
+(defn- get-extension [^String p] (-> p (str/split #"\.") last))
+
+(defn- extension-in? [extensions ^String path]
+  (some (-> path get-extension vector set) extensions))
 
 (defn find-files-with-extensions
   "Return all files under root-path that have any of the file extensions in
@@ -13,9 +21,9 @@
   (->> root-path
        io/file
        file-seq
-       (filter #(.isFile %))
-       (map #(.toPath %))
-       (filter #(some (-> % str (str/split #"\.") last vector set) extensions))))
+       (filter is-file?)
+       (map file->path-str)
+       (filter (partial extension-in? extensions))))
 
 (defn find-feature-files
   "Locate any feature files under root-path."

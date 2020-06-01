@@ -5,7 +5,7 @@
 
 (defn get-step-duration
   "Return seconds taken to complete step"
-  [start-time end-time]
+  [^java.util.Date start-time ^java.util.Date end-time]
   (/ (- (.getTime end-time) (.getTime start-time)) 1000.0))
 
 (defn get-step-type
