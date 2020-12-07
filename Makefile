@@ -12,7 +12,7 @@ pack-jar:  ## Build the tegere.jar file using Pack
 		--no-libs \
 		--project-path tegere.jar
 
-deploy-clojars:  ## Releaset to Clojars
+deploy-clojars:  ## Release to Clojars
 	@mvn deploy:deploy-file \
 		-Dfile=tegere.jar \
 		-DrepositoryId=clojars \
