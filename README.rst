@@ -2,8 +2,6 @@
   TeGere
 ================================================================================
 
-.. image:: https://travis-ci.com/jrwdunham/tegere.svg?branch=master
-    :target: https://travis-ci.com/jrwdunham/tegere.svg?branch=master
 .. image:: https://circleci.com/gh/jrwdunham/tegere.svg?style=svg
     :target: https://circleci.com/gh/jrwdunham/tegere
 .. image:: https://img.shields.io/clojars/v/tegere.svg
@@ -33,13 +31,13 @@ The latest version on Clojars:
 
 .. code-block:: bash
 
-      {tegere {:mvn/version "0.1.0"}}
+      {tegere {:mvn/version "0.1.5"}}
 
 Try it out quickly:
 
 .. code-block:: bash
 
-      clj -Sdeps "{:deps {tegere {:mvn/version \"0.1.0\"}}}"
+      clj -Sdeps "{:deps {tegere {:mvn/version \"0.1.5\"}}}"
 
 Now write some Gherkin_ feature files and save them (with the ``.feature``
 extension) to some directory. Now map the Gherkin step strings to Clojure
