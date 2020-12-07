@@ -111,17 +111,17 @@
       (vec (concat base where-clauses))
       base)))
 
-(defn- ->map-indices
-  "Convert a sequence of 2-ary [feature-idx scenario-idx] vectors to a map from
-  feature indices to vectors of scenario indices. Example:
+(defn- group-pairs-by-first
+  "Convert a sequence of pairs (2-ary vectors) to a map from first elements to
+  vectors of second elements. Example:
 
-      user> (->map-indices [[0 1] [0 2] [1 1] [1 45] [2 0]])
+      user> (group-pairs-by-first [[0 1] [0 2] [1 1] [1 45] [2 0]])
       {0 [1 2], 1 [1 45], 2 [0]}
   "
   [indices]
   (->> indices
        (group-by first)
-       (map (fn [[f-idx s-idxs]] [f-idx (mapv second s-idxs)]))
+       (map (juxt key (comp (partial mapv second) val)))
        (into {})))
 
 (defn filter-scenarios
@@ -137,7 +137,7 @@
   [feature-idx scenario-idx] in ``indices``. The input and output features
   collection conforms to ``:tegere.parser/features``."
   [features indices]
-  (let [indices (->map-indices indices)]
+  (let [indices (group-pairs-by-first indices)]
     (->> features
          (map-indexed
           (fn [idx f]
