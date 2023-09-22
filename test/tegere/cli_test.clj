@@ -49,7 +49,7 @@
           (t/is (= expected actual)))))))
 
 (t/deftest parsed-command-line-tags-query-correctly
-  (t/testing "That queries from parsed command-line tags work"
+  (t/testing "CHANGES That queries from parsed command-line tags work"
     (let [features (l/load-feature-files "examples/apes/src/apes/features")
           expectations
           [[["--tags=bonobos,@chimpanzees"
