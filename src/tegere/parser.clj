@@ -342,3 +342,34 @@
   [te]
   (or (parse-tag-expression te)
       (parse-old-style-tag-expression te)))
+
+(comment
+
+  (* 8 8)
+  (def classes
+    {1 ::informational
+     2 ::successful
+     3 ::redirection
+     4 ::client-error
+     5 ::server-error})
+
+  (defmulti ex-status identity)
+
+  (defmulti ex-message identity)
+
+  (defmacro defstatus [type code message]
+    (let [cls (classes (int (/ code 100)))]
+      `(do
+         (derive ~type ~cls)
+         (defmethod ex-status ~type [_#] ~code)
+         (defmethod ex-message ~type [_#] ~message))))
+
+  (defstatus ::ok 200 "OK")
+
+  (ex-status ::ok)
+
+  (ex-message ::zok)
+
+  (isa? ::ok ::redirection)
+
+  )
